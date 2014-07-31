@@ -505,7 +505,15 @@ def pickCephProcesses(hostname, db):
                 procid = db.processstat.insert(p_db)
                 db.mon.update({'_id' : id},{"$set" : {"process" : DBRef("process",procid)}})            
            
-
+def cephDaemonPerf(hostname, db):
+    print str(datetime.datetime.now()),"-- Ceph daemon perf records"
+    sys.stdout.flush()
+    
+    output = subprocess.Popen(['ceph', 'daemon', 'osd.0', 'perf', 'dump'], stdout=subprocess.PIPE).communicate()[0].rsplit('\n')
+    hw_io = StringIO(output)
+    hw = json.load(hw_io)    
+    print str(datetime.datetime.now()),hw
+    
 
 
 #delete the oldest stats
@@ -654,7 +662,7 @@ class SysProbeDaemon(Daemon):
         sys.stdout.flush()
         
         hostname = socket.gethostname() #platform.node()
-	if is_mongo_replicat ==  1:
+	    if is_mongo_replicat ==  1:
          print  "replicat set connexion"
          client=MongoReplicaSetClient(eval(mongodb_set), replicaSet=mongodb_replicaSet, read_preference=eval(mongodb_read_preference))
         else:
@@ -715,7 +723,13 @@ class SysProbeDaemon(Daemon):
             processThread = Repeater(evt, pickCephProcesses, [hostname, db], process_refresh)
             processThread.start()
             
-        # drop thread
+        perfdumpThread = None
+        if process_refresh > 0:
+            perfdumpThread = Repeater(evt, cephDaemonPerf, [hostname, db], process_refresh)
+            perfdumpThread.start()    
+           
+            
+        # drop threadps au
         cpuDBDropThread = None    
         if cpu_window > 0 :
             cpuDBDropThread = Repeater(evt, dropStat, [db, "cpustat", cpu_window], cpu_window)
