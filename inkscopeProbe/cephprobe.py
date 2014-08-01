@@ -162,14 +162,14 @@ def processStatus(restapi, db):
         map_stat_mon = {}
         health_services_list = c_status['output']['health']['health']['health_services']
        
-        time_checks  = c_status['output']['health']['timechecks']
-        timecheckmap = {}
-        for tc in time_checks["mons"]:
-            tc["time_health"] = tc["health"]
-            del tc["health"]
-            monname = tc["name"]
-            del tc["name"]
-            timecheckmap[monname] = tc
+        #time_checks  = c_status['output']['health']['timechecks']
+        #timecheckmap = {}
+        #for tc in time_checks["mons"]:
+        #    tc["time_health"] = tc["health"]
+        #    del tc["health"]
+        #    monname = tc["name"]
+        #    del tc["name"]
+        #    timecheckmap[monname] = tc
             
         
         
@@ -184,12 +184,12 @@ def processStatus(restapi, db):
                 monstat["capacity_health"] = monstat["health"] 
                 
                 #complete with timecheck
-                if monstat["name"] in timecheckmap:
-                    tc = timecheckmap[monstat["name"]]
-                    monstat.update(tc)
+                #if monstat["name"] in timecheckmap:
+                #    tc = timecheckmap[monstat["name"]]
+                #    monstat.update(tc)
                 
-                monstat["health"] = worstHealth(monstat["capacity_health"], monstat["time_health"] )
-                del monstat["name"]
+                #monstat["health"] = worstHealth(monstat["capacity_health"], monstat["time_health"] )
+                #del monstat["name"]
                 db.monstat.update({"_id" : monstat["_id"]}, monstat, upsert= True)
                 map_stat_mon[monst['name']] = monstat["_id"]
         

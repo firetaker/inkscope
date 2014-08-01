@@ -526,7 +526,30 @@ def cephDaemonPerf(hostname, db):
               }
     db.perfdump.insert(db_perf)
     
-
+def cephDumpHisOps(hostname,db):
+    print str(datetime.datetime.now()),"-- ceph daemon osd.0 dump dump_historic_ops"
+    sys.stdout.flush()
+    
+    output=subprocess.Popen(['ceph','daemon','osd.0','dump_historic_ops'], stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    outdata,errdata = output.communicate()
+    if (len(errdata)):
+        raise RuntimeError('unable to run osd dump history ops: %s' % (errdata))
+    hist_io = StringIO(outdata)
+    hist_ops = json.load(hist_io)
+    ops_num = len(hist_ops['Ops'])
+    if 0 == ops_num :
+        print "-- no ops now"
+        return
+    for op in hist_ops['Ops']:
+        print op
+        sys.stdout.flush()
+    ops_db ={
+             "timestamp" : int(round(time.time() * 1000)) ,
+              "osdid"    : "osd.0",
+              "ops"      : hist_ops['Ops'],   
+            }
+    db.histops.insert(ops_db)
+    
 
 #delete the oldest stats
 def dropStat(db, collection, window):
@@ -738,7 +761,12 @@ class SysProbeDaemon(Daemon):
         perfdumpThread = None
         if process_refresh > 0:
             perfdumpThread = Repeater(evt, cephDaemonPerf, [hostname, db], process_refresh)
-            perfdumpThread.start()    
+            perfdumpThread.start()  
+        
+        histDumpThread = None
+        if process_refresh > 0:
+            histDumpThread = Repeater(evt, cephDumpHisOps, [hostname, db], process_refresh) 
+            histDumpThread.start()  
            
             
         # drop threadps au
