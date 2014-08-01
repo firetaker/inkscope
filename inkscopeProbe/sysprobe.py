@@ -508,11 +508,23 @@ def pickCephProcesses(hostname, db):
 def cephDaemonPerf(hostname, db):
     print str(datetime.datetime.now()),"-- Ceph daemon perf records"
     sys.stdout.flush()
-    
-    output = subprocess.Popen(['ceph', 'daemon', 'osd.0', 'perf', 'dump'], stdout=subprocess.PIPE).communicate()[0].rsplit('\n')
-    hw_io = StringIO(output)
-    hw = json.load(hw_io)    
-    print str(datetime.datetime.now()),hw
+
+    output = subprocess.Popen(['ceph', 'daemon', 'osd.0', 'perf', 'dump'], stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    print "-- get perf ok"
+    outdata, errdata = output.communicate()
+    if (len(errdata)):
+        raise RuntimeError('unable to run osd perf data: %s' % (errdata))
+    perf_io = StringIO(outdata)
+    perf = json.load(perf_io)
+    osd_perf = perf['osd']
+    print osd_perf
+    sys.stdout.flush()
+    db_perf ={
+               "timestamp" : int(round(time.time() * 1000)) ,
+                "osdid"    : "osd.0",
+                "perf"     : osd_perf,
+              }
+    db.perfdump.insert(db_perf)
     
 
 
