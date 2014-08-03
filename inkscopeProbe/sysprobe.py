@@ -456,7 +456,7 @@ def pickCpuStat(hostname, db):
                  "softirq" :  cputimes.softirq,
                  "steal": cputimes.steal,
                  "guest" : cputimes.guest,
-                 "guest_nice" : cputimes.guest_nice
+                 #"guest_nice" : cputimes.guest_nice
                  }
     cpus_stat_hostx_id = db.cpustat.insert(cpus_stat)
     db.hosts.update({"_id": hostname}, {"$set": {"stat": DBRef("cpus_stat",cpus_stat_hostx_id)}})
@@ -466,10 +466,10 @@ def pickCephProcesses(hostname, db):
     print str(datetime.datetime.now()), "-- Pick Ceph Processes"  
     sys.stdout.flush()
     iterP = psutil.process_iter()
-    cephProcs = [p for p in iterP if p.name.startswith('ceph-')]
+    cephProcs = [p for p in iterP if p.name().startswith('ceph-')]
     
     for cephProc in cephProcs :
-        options, remainder = getopt.getopt(cephProc.cmdline[1:], 'i:f', ['cluster='])
+        options, remainder = getopt.getopt(cephProc.cmdline()[1:], 'i:f', ['cluster='])
         
         clust = None
         id = None
