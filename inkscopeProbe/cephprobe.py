@@ -454,7 +454,34 @@ def processDf(restapi, db):
             pstats["pool"] = DBRef("pools", pdf["id"])    
             statsid = db.poolstat.insert(pstats)       
             db.pools.update({'_id' : pdf["id"]}, {"$set" : {"df" : DBRef("poolstat",statsid)}})
+
+def processOsdPerf(restapi,db):
+    print str(datetime.datetime.now()),"-- Process OSD perf"
+    sys.stdout.flush()
+
+    restapi.connect()
+    restapi.request("GET","/api/v0.1/osd/perf.json")
+
+    res1=restapi.getresponse()
+    restapi.close()
+
+    if(res1.status == 200):
+        data_perf=res1.read()
+        io_perf=StringIO(data_perf)
+        osd_perf=json.load(io_perf)
         
+        timestamp_var = int(round(time.time() * 1000)) 
+        for pf in osd_perf['output']['osd_perf_infos'] :
+            pf['_id']=pf['id']
+            del pf['id']
+            osdtypeid = "%s%d"%("osd.",pf['_id'])
+            perf_db = {
+                   "timestamp"  : timestamp_var,
+                   "osdid"      : pf['_id'],
+                   "osdtypeid"  : osdtypeid,
+                   "perf_stats" : pf['perf_stats'],
+                   }
+            db.osdperf.insert(perf_db)        
         
 #delete the oldest stats
 def dropStat(db, collection, window):
@@ -542,6 +569,11 @@ class SysProbeDaemon(Daemon):
         df_refresh = conf.get("df_refresh", 60)
         print "df_refresh = ", df_refresh
         
+        osdperf_refresh = conf.get("osdperf_refresh", 10)
+        print "osdperf_refresh = ", osdperf_refresh
+        
+        osdperf_window = conf.get("osdperf_window", 3600)
+        print "osdperf_window = ", osdperf_window
         
         cluster_window = conf.get("cluster_window", 1200)
         print "cluster_window = ", cluster_window
@@ -638,6 +670,13 @@ class SysProbeDaemon(Daemon):
             restapi = httplib.HTTPConnection(ceph_rest_api)
             dfThread = Repeater(evt, processDf, [restapi, db], df_refresh)
             dfThread.start()
+        
+        osdperfThread = None    
+        if osdperf_refresh > 0 :
+            restapi = httplib.HTTPConnection(ceph_rest_api)
+            osdperfThread = Repeater(evt, processOsdPerf, [restapi, db], osdperf_refresh)
+            osdperfThread.start()    
+            
             
             
         # drop threads : osdstat, poolstat, clusterstat
@@ -655,6 +694,11 @@ class SysProbeDaemon(Daemon):
         if pool_window > 0 :
             poolDBDropThread = Repeater(evt, dropStat, [db, "poolstat", pool_window], pool_window)
             poolDBDropThread.start()
+            
+        osdperfDBDropThread = None    
+        if osdperf_window > 0 :
+            osdperfDBDropThread = Repeater(evt, dropStat, [db, "osdperf", osdperf_window], osdperf_window)
+            osdperfDBDropThread.start()
         
         signal.signal(signal.SIGTERM, handler)
         

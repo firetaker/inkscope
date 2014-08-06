@@ -589,10 +589,10 @@ def iterHostOsd(hostname,db):
     #sys.stdout.flush()
     osds = []
     for obj in out_put:
-       osds.append(obj['_id'])
+        osds.append(obj['_id'])
     for id in osds:
-       print id
-       sys.stdout.flush()
+        print id
+        sys.stdout.flush()
 
 #delete the oldest stats
 def dropStat(db, collection, window):
