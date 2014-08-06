@@ -697,6 +697,12 @@ class SysProbeDaemon(Daemon):
         partition_window = data.get("partition_window", 1200)
         print "partition_window = ", partition_window
         
+        perf_window = data.get("perf_window", 3600)
+        print "perf_window = ", perf_window
+        
+        hist_window= data.get("hist_window", 3600)
+        print "hist_window = ", hist_window
+        
         cpu_refresh = data.get("cpu_refresh", 60)
         print "cpu_refresh = ", cpu_refresh
         
@@ -705,6 +711,12 @@ class SysProbeDaemon(Daemon):
         
         net_refresh = data.get("net_refresh", 30)
         print "net_refresh = ", net_refresh
+        
+        perf_refresh = data.get("perf_refresh", 60)
+        print "perf_refresh = ", perf_refresh
+        
+        hist_refresh = data.get("hist_refresh", 60)
+        print "hist_refresh = ", hist_refresh
         
         net_window = data.get("net_window", 1200)
         print "net_window = ", net_window       
@@ -741,16 +753,16 @@ class SysProbeDaemon(Daemon):
         
         hostname = socket.gethostname() #platform.node()
         if is_mongo_replicat ==  1:
-         print  "replicat set connexion"
-         client=MongoReplicaSetClient(eval(mongodb_set), replicaSet=mongodb_replicaSet, read_preference=eval(mongodb_read_preference))
+            print  "replicat set connexion"
+            client=MongoReplicaSetClient(eval(mongodb_set), replicaSet=mongodb_replicaSet, read_preference=eval(mongodb_read_preference))
         else:
-         print  "no replicat set"
-         client = MongoClient(mongodb_host, mongodb_port)
+            print  "no replicat set"
+            client = MongoClient(mongodb_host, mongodb_port)
         if is_mongo_authenticate == 1:
-         print "authentication  to database"
-         client.ceph.authenticate(mongodb_user,mongodb_passwd)
+            print "authentication  to database"
+            client.ceph.authenticate(mongodb_user,mongodb_passwd)
         else:
-         print "no authentication" 
+            print "no authentication" 
 
         db = client[clusterName]
         
@@ -802,21 +814,31 @@ class SysProbeDaemon(Daemon):
             processThread.start()
         
         perfdumpThread = None
-        if process_refresh > 0:
-            perfdumpThread = Repeater(evt, cephDaemonPerf, [hostname, db], process_refresh)
+        if perf_refresh > 0:
+            perfdumpThread = Repeater(evt, cephDaemonPerf, [hostname, db], perf_refresh)
             perfdumpThread.start() 
         
         histDumpThread = None
-        if process_refresh > 0:
-            histDumpThread = Repeater(evt, cephDumpHisOps, [hostname, db], process_refresh) 
+        if hist_refresh > 0:
+            histDumpThread = Repeater(evt, cephDumpHisOps, [hostname, db], hist_refresh) 
             histDumpThread.start()  
        
         iterHostOsdThread = None
         if  process_refresh > 0:
-             iterHostOsdThread = Repeater(evt, iterHostOsd, [hostname, db], process_refresh)
-             iterHostOsdThread.start() 
+            iterHostOsdThread = Repeater(evt, iterHostOsd, [hostname, db], process_refresh)
+            iterHostOsdThread.start() 
 
         # drop thread
+        perfDBDropThread = None    
+        if perf_window > 0 :
+            perfDBDropThread = Repeater(evt, dropStat, [db, "perfdump", perf_window], perf_window)
+            perfDBDropThread.start()
+        
+        histDBDropThread = None    
+        if hist_window > 0 :
+            histDBDropThread = Repeater(evt, dropStat, [db, "histops", hist_window], hist_window)
+            histDBDropThread.start()
+                
         cpuDBDropThread = None    
         if cpu_window > 0 :
             cpuDBDropThread = Repeater(evt, dropStat, [db, "cpustat", cpu_window], cpu_window)
