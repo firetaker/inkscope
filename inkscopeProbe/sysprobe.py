@@ -630,12 +630,7 @@ def ensure_dir(f):
     d = os.path.dirname(f)
     if not os.path.exists(d):
         os.makedirs(d)
-    
-
-def ensure_dir(f):
-    d = os.path.dirname(f)
-    if not os.path.exists(d):
-        os.makedirs(d)  
+     
 #ceph probe 
 #cephClient = httplib.HTTPConnection("localhost", port)
 
