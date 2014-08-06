@@ -16,16 +16,25 @@ def getClient(conf):
     mongodb_host = conf.get("mongodb_host", "127.0.0.1")
     mongodb_port = conf.get("mongodb_port", "27017")
     mongodb_URL = "mongodb://"+mongodb_host+":"+mongodb_port
+    mongodb_user = conf.get("mongodb_user","ceph")
+    mongodb_passwd = conf.get("mongodb_passwd","ceph")
+    is_mongo_authenticate = conf.get("is_mongo_authenticate",0)
     #mongodb replication
     is_mongo_replicat = conf.get("is_mongo_replicat", 0)
     mongodb_set = "'"+conf.get("mongodb_set","")+"'"
     mongodb_replicaSet =conf.get("mongodb_replicaSet",None)
     mongodb_read_preference = conf.get("mongodb_read_preference",None)
+    
+    client=None
     if is_mongo_replicat ==  1:
-        return MongoReplicaSetClient(eval(mongodb_set), replicaSet=mongodb_replicaSet, read_preference=eval(mongodb_read_preference))
+        client = MongoReplicaSetClient(eval(mongodb_set), replicaSet=mongodb_replicaSet, read_preference=eval(mongodb_read_preference))
     else:
         #if not replicated
-        return MongoClient(mongodb_URL)
+        client = MongoClient(mongodb_URL)
+    # if mongodb auth is true,must use this to connect
+    if is_mongo_authenticate == 1:
+       client.ceph.authenticate(mongodb_user,mongodb_passwd)   
+    return client
 
 def getObject(db, collection, objectId, depth, branch):
     """
