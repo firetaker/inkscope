@@ -456,7 +456,7 @@ def pickCpuStat(hostname, db):
                  "softirq" :  cputimes.softirq,
                  "steal": cputimes.steal,
                  "guest" : cputimes.guest,
-                 #"guest_nice" : cputimes.guest_nice
+                # "guest_nice" : cputimes.guest_nice
                  }
     cpus_stat_hostx_id = db.cpustat.insert(cpus_stat)
     db.hosts.update({"_id": hostname}, {"$set": {"stat": DBRef("cpus_stat",cpus_stat_hostx_id)}})
@@ -467,10 +467,13 @@ def pickCephProcesses(hostname, db):
     sys.stdout.flush()
     iterP = psutil.process_iter()
     cephProcs = [p for p in iterP if p.name().startswith('ceph-')]
-    
+    print "--- filtrt one ok ..."
+    print "--- list len: ",len(cephProcs)
+    sys.stdout.flush()
+ 
     for cephProc in cephProcs :
         options, remainder = getopt.getopt(cephProc.cmdline()[1:], 'i:f', ['cluster='])
-        
+                
         clust = None
         id = None
         
@@ -504,52 +507,92 @@ def pickCephProcesses(hostname, db):
                 p_db["mon"] = DBRef("mon", id)
                 procid = db.processstat.insert(p_db)
                 db.mon.update({'_id' : id},{"$set" : {"process" : DBRef("process",procid)}})            
-           
+
 def cephDaemonPerf(hostname, db):
     print str(datetime.datetime.now()),"-- Ceph daemon perf records"
     sys.stdout.flush()
-
-    output = subprocess.Popen(['ceph', 'daemon', 'osd.0', 'perf', 'dump'], stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    print "-- get perf ok"
-    outdata, errdata = output.communicate()
-    if (len(errdata)):
-        raise RuntimeError('unable to run osd perf data: %s' % (errdata))
-    perf_io = StringIO(outdata)
-    perf = json.load(perf_io)
-    osd_perf = perf['osd']
-    print osd_perf
-    sys.stdout.flush()
-    db_perf ={
+    
+    osds = []
+    host_pair = {"host" : DBRef( "hosts",  hostname)}
+    out_put = db.osd.find(host_pair)
+    for obj in out_put:
+        osds.append(obj['_id'])
+    
+    #if len(osds) == 0:
+    #    return
+    osd_str = 'osd.' 
+    for idx in osds:
+        osdid = "%s%d"%(osd_str,idx)
+        output = subprocess.Popen(['ceph', 'daemon', osdid, 'perf', 'dump'], stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        outdata, errdata = output.communicate()
+        if (len(errdata)):
+            raise RuntimeError('unable to run osd perf data: %s' % (errdata))
+        perf_io = StringIO(outdata)
+        perf = json.load(perf_io)
+        osd_perf = perf['osd']
+     
+        db_perf ={
                "timestamp" : int(round(time.time() * 1000)) ,
-                "osdid"    : "osd.0",
+                "osdid"    : idx,
+                "osd_typeid" : osdid,
+                "host"     : DBRef( "hosts",  hostname), 
                 "perf"     : osd_perf,
               }
-    db.perfdump.insert(db_perf)
-    
+        db.perfdump.insert(db_perf)
+
 def cephDumpHisOps(hostname,db):
     print str(datetime.datetime.now()),"-- ceph daemon osd.0 dump dump_historic_ops"
     sys.stdout.flush()
     
-    output=subprocess.Popen(['ceph','daemon','osd.0','dump_historic_ops'], stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-    outdata,errdata = output.communicate()
-    if (len(errdata)):
-        raise RuntimeError('unable to run osd dump history ops: %s' % (errdata))
-    hist_io = StringIO(outdata)
-    hist_ops = json.load(hist_io)
-    ops_num = len(hist_ops['Ops'])
-    if 0 == ops_num :
-        print "-- no ops now"
-        return
-    for op in hist_ops['Ops']:
-        print op
-        sys.stdout.flush()
-    ops_db ={
-             "timestamp" : int(round(time.time() * 1000)) ,
-              "osdid"    : "osd.0",
-              "ops"      : hist_ops['Ops'],   
-            }
-    db.histops.insert(ops_db)
+    osds = []
+    host_pair = {"host" : DBRef( "hosts",  hostname)}
+    out_put = db.osd.find(host_pair)
+    for obj in out_put:
+        osds.append(obj['_id'])
+        
+    osd_str = 'osd.'
+    for idx in osds:
+        osdid = "%s%d"%(osd_str,idx)
+        
+        output=subprocess.Popen(['ceph','daemon',osdid,'dump_historic_ops'], stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+        outdata,errdata = output.communicate()
+        if (len(errdata)):
+            raise RuntimeError('unable to run osd dump history ops: %s' % (errdata))
+        
+        hist_io = StringIO(outdata)
+        hist_ops = json.load(hist_io)
+        ops_num = len(hist_ops['Ops'])
+        if 0 == ops_num :
+            print "-- no ops now"
+            return
+        
+        ops_db ={
+                 "timestamp" : int(round(time.time() * 1000)) ,
+                  "osdid"    : idx,
+                  "osd_typeid" : osdid,
+                  "host"     : DBRef( "hosts",  hostname),
+                  "ops"      : hist_ops['Ops'],   
+                }
+        db.histops.insert(ops_db) 
+
+def iterHostOsd(hostname,db):
+    print str(datetime.datetime.now()), hostname, "-- Ceph daemon iter host's osds"
+    sys.stdout.flush()
     
+    host_pair = {"host" : DBRef( "hosts",  hostname)}
+    out_put = db.osd.find(host_pair)
+    #len_t = len(out_put)
+    # no osd dameon on this hosts
+    #if len_t == 0:
+    #    return
+    #print out_put
+    #sys.stdout.flush()
+    osds = []
+    for obj in out_put:
+       osds.append(obj['_id'])
+    for id in osds:
+       print id
+       sys.stdout.flush()
 
 #delete the oldest stats
 def dropStat(db, collection, window):
@@ -692,12 +735,12 @@ class SysProbeDaemon(Daemon):
         mongodb_passwd = data.get("mongodb_passwd", None)
         print "mongodb_passwd = ", mongodb_passwd
 
-	# end conf extraction
+    # end conf extraction
 
         sys.stdout.flush()
         
         hostname = socket.gethostname() #platform.node()
-	    if is_mongo_replicat ==  1:
+        if is_mongo_replicat ==  1:
          print  "replicat set connexion"
          client=MongoReplicaSetClient(eval(mongodb_set), replicaSet=mongodb_replicaSet, read_preference=eval(mongodb_read_preference))
         else:
@@ -757,19 +800,23 @@ class SysProbeDaemon(Daemon):
         if process_refresh > 0:
             processThread = Repeater(evt, pickCephProcesses, [hostname, db], process_refresh)
             processThread.start()
-            
+        
         perfdumpThread = None
         if process_refresh > 0:
             perfdumpThread = Repeater(evt, cephDaemonPerf, [hostname, db], process_refresh)
-            perfdumpThread.start()  
+            perfdumpThread.start() 
         
         histDumpThread = None
         if process_refresh > 0:
             histDumpThread = Repeater(evt, cephDumpHisOps, [hostname, db], process_refresh) 
             histDumpThread.start()  
-           
-            
-        # drop threadps au
+       
+        iterHostOsdThread = None
+        if  process_refresh > 0:
+             iterHostOsdThread = Repeater(evt, iterHostOsd, [hostname, db], process_refresh)
+             iterHostOsdThread.start() 
+
+        # drop thread
         cpuDBDropThread = None    
         if cpu_window > 0 :
             cpuDBDropThread = Repeater(evt, dropStat, [db, "cpustat", cpu_window], cpu_window)
@@ -833,4 +880,3 @@ if __name__ == "__main__":
     else:
         print "usage: %s start|stop|restart" % sys.argv[0]
         sys.exit(2)
-
