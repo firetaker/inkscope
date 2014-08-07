@@ -62,19 +62,19 @@ StatusApp.controller("statusCtrl", function ($scope, $http , $cookieStore) {
     refreshOSDData();
     setInterval(function () {
         refreshData()
-    }, 5 * 1000);
+    }, 30 * 1000);
     setInterval(function () {
         refreshPGData()
-    }, 10 * 1000);
+    }, 40 * 1000);
     setInterval(function () {
         refreshOSDData()
-    }, 5 * 1000);
+    }, 20 * 1000);
 
 
 
     function refreshPGData() {
         $scope.date = new Date();
-        $http({method: "get", url: apiURL + "pg/stat.json",timeout:8000})
+        $http({method: "get", url: apiURL + "pg/stat.json",timeout:60000})
             .success(function (data, status) {
                 var nodeUid = 0;
                 // fetching pg list and relation with osd
@@ -136,7 +136,7 @@ StatusApp.controller("statusCtrl", function ($scope, $http , $cookieStore) {
     function refreshData() {
         //console.log("refreshing data...");
         $scope.date = new Date();
-        $http({method: "get", url: apiURL + "status.json",timeout:4000})
+        $http({method: "get", url: apiURL + "status.json",timeout:60000})
             .success(function (data) {
                 $scope.pgmap = data.output.pgmap;
                 $scope.mdsmap = data.output.mdsmap;

@@ -226,6 +226,42 @@ def processStatus(restapi, db):
                    }     
         db.cluster.update({'_id' : c_status['output']['fsid']}, cluster, upsert= True)
         
+        read_bytes_sec = 0
+        write_bytes_sec = 0
+        op_per_sec = 0
+        recovering_objects_per_sec = 0
+        recovering_bytes_per_sec = 0
+        recovering_keys_per_sec = 0
+        
+        if c_status['output']['pgmap'].has_key("read_bytes_sec") :
+            read_bytes_sec = c_status['output']['pgmap']['read_bytes_sec']
+        
+        if c_status['output']['pgmap'].has_key("write_bytes_sec") :
+            write_bytes_sec = c_status['output']['pgmap']['write_bytes_sec']
+            
+        if c_status['output']['pgmap'].has_key("op_per_sec") :
+            op_per_sec = c_status['output']['pgmap']['op_per_sec']
+            
+        if c_status['output']['pgmap'].has_key("recovering_objects_per_sec") :
+            recovering_objects_per_sec = c_status['output']['pgmap']['recovering_objects_per_sec']
+        
+        if c_status['output']['pgmap'].has_key("recovering_bytes_per_sec") :
+            recovering_bytes_per_sec = c_status['output']['pgmap']['recovering_bytes_per_sec']
+        
+        if c_status['output']['pgmap'].has_key("recovering_keys_per_sec") :
+            recovering_keys_per_sec = c_status['output']['pgmap']['recovering_keys_per_sec']    
+        
+        iops ={
+               "timestamp" : int(round(time.time() * 1000)),
+               "read_bytes_sec" : read_bytes_sec,
+               "write_bytes_sec": write_bytes_sec,
+               "op_per_sec" : op_per_sec,
+               "recovering_objects_per_sec": recovering_objects_per_sec,
+               "recovering_bytes_per_sec" :recovering_bytes_per_sec,
+               "recovering_keys_per_sec" :recovering_keys_per_sec,
+               }
+        db.iops.insert(iops)
+        
         return c_status['output']['fsid']
    
 
@@ -575,6 +611,9 @@ class SysProbeDaemon(Daemon):
         osdperf_window = conf.get("osdperf_window", 3600)
         print "osdperf_window = ", osdperf_window
         
+        clusterperf_window = conf.get("clusterperf_window", 3600)
+        print "clusterperf_window = ", clusterperf_window
+        
         cluster_window = conf.get("cluster_window", 1200)
         print "cluster_window = ", cluster_window
         
@@ -699,6 +738,11 @@ class SysProbeDaemon(Daemon):
         if osdperf_window > 0 :
             osdperfDBDropThread = Repeater(evt, dropStat, [db, "osdperf", osdperf_window], osdperf_window)
             osdperfDBDropThread.start()
+        
+        clusterperfDBDropThread = None    
+        if clusterperf_window > 0 :
+            clusterperfDBDropThread = Repeater(evt, dropStat, [db, "iops", clusterperf_window], clusterperf_window)
+            clusterperfDBDropThread.start()
         
         signal.signal(signal.SIGTERM, handler)
         
