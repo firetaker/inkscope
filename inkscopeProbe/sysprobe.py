@@ -45,7 +45,7 @@ import signal
 
 configfile = "/opt/inkscope/etc/sysprobe.conf"
 runfile = "/var/run/sysprobe/sysprobe.pid"
-logfile = "/var/log/sysprobe.log"
+logfile = "/var/log/ceph/sysprobe.log"
 
 
 
@@ -518,8 +518,9 @@ def cephDaemonPerf(hostname, db):
     for obj in out_put:
         osds.append(obj['_id'])
     
-    #if len(osds) == 0:
-    #    return
+    if 0 == len(osds):
+        return
+    
     osd_str = 'osd.' 
     for idx in osds:
         osdid = "%s%d"%(osd_str,idx)
