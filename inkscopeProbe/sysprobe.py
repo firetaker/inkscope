@@ -467,8 +467,7 @@ def pickCephProcesses(hostname, db):
     sys.stdout.flush()
     iterP = psutil.process_iter()
     cephProcs = [p for p in iterP if p.name().startswith('ceph-')]
-    print "--- filtrt one ok ..."
-    print "--- list len: ",len(cephProcs)
+
     sys.stdout.flush()
  
     for cephProc in cephProcs :
@@ -482,31 +481,41 @@ def pickCephProcesses(hostname, db):
                 id = arg
             elif opt in  '--cluster':
                 clust = arg
+        #>>> print psutil.__version__
+        #    2.1.0
         
-        if db.name == clust :    
-            p_db = {              
-                    "timestamp" : int(round(time.time() * 1000)) ,
-                    "host" : DBRef( "hosts",  hostname),
-                    "pid" : cephProc.pid,
-                    "mem_rss" : cephProc.get_ext_memory_info().rss,
-                    "mem_vms" : cephProc.get_ext_memory_info().vms,
-                    "mem_shared" : cephProc.get_ext_memory_info().shared,
-                    "num_threads" : cephProc.get_num_threads(),
-                    "cpu_times_user" : cephProc.get_cpu_times().user,
-                    "cpu_times_system" : cephProc.get_cpu_times().system,            
-                    }
-            
-            
-            if cephProc.name == 'ceph-osd' :
-                #osd       
-                p_db["osd"] = DBRef("osd", id)
-                procid = db.processstat.insert(p_db)
-                db.osd.update({'_id' : id},{"$set" : {"process" : DBRef("process",procid)}})            
-            elif cephProc.name == 'ceph-mon' :
-                #mon 
-                p_db["mon"] = DBRef("mon", id)
-                procid = db.processstat.insert(p_db)
-                db.mon.update({'_id' : id},{"$set" : {"process" : DBRef("process",procid)}})            
+        #if db.name == clust :    
+        p_db = {              
+                "timestamp" : int(round(time.time() * 1000)) ,
+                "host" : DBRef( "hosts",  hostname),
+                "pid" : cephProc.pid,
+                #"mem_rss" : cephProc.get_ext_memory_info().rss, #deprecated in centos
+                "mem_rss" : cephProc.memory_info_ex().rss,
+                #"mem_vms" : cephProc.get_ext_memory_info().vms,
+                "mem_vms" : cephProc.memory_info_ex().vms,
+                #"mem_shared" : cephProc.get_ext_memory_info().shared,
+                "mem_shared" : cephProc.memory_info_ex().shared,
+                #"num_threads" : cephProc.get_num_threads(),
+                "num_threads" : cephProc.num_threads(),
+                #"cpu_times_user" : cephProc.get_cpu_times().user,
+                #"cpu_times_system" : cephProc.get_cpu_times().system,
+                "cpu_times_user" : cephProc.cpu_times().user,
+                "cpu_times_system" : cephProc.cpu_times().system,               
+                }
+        
+        
+        if cephProc.name() == 'ceph-osd' :
+            #osd       
+            p_db["osd"] = DBRef("osd", id)
+            db.processstat.insert(p_db)
+            #procid = db.processstat.insert(p_db)
+            #db.osd.update({'_id' : id},{"$set" : {"process" : DBRef("processstat",procid)}})            
+        elif cephProc.name() == 'ceph-mon' :
+            #mon 
+            p_db["mon"] = DBRef("mon", id)
+            db.processstat.insert(p_db)
+            #procid = db.processstat.insert(p_db)
+            #db.mon.update({'_id' : id},{"$set" : {"process" : DBRef("processstat",procid)}})           
 
 def cephDaemonPerf(hostname, db):
     print str(datetime.datetime.now()),"-- Ceph daemon perf records"
