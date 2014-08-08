@@ -566,14 +566,44 @@ def cephDumpHisOps(hostname,db):
             print "-- no ops now"
             return
         
-        ops_db ={
-                 "timestamp" : int(round(time.time() * 1000)) ,
-                  "osdid"    : idx,
-                  "osd_typeid" : osdid,
-                  "host"     : DBRef( "hosts",  hostname),
-                  "ops"      : hist_ops['Ops'],   
-                }
-        db.histops.insert(ops_db) 
+        for op in hist_ops['Ops']:
+            for key in op:
+                print "key :",key," --- value :",op[key]
+                sys.stdout.flush()
+                
+        for op in hist_ops['Ops']:
+            description = op['description']
+            split_des = description.split(" ")
+            osdop = split_des[0].split("(")
+            op_from = osdop[1].split(":")[0]
+            op_tid = osdop[1].split(":")[1]
+            obj_oid = split_des[1]
+            obj_misc = split_des[2]
+            obj_pgid = split_des[3]
+            op_type = split_des[4]
+            op_epcho = split_des[5]
+            
+            ops_dbdata={
+                        "_id"        : op_tid, # distinct
+                        "timestamp"  : int(round(time.time() * 1000)) ,
+                        "osdid"      : idx,
+                        "osd_typeid" : osdid,
+                        "host"       : DBRef( "hosts",  hostname),
+                        "op_tid"     : op_tid,
+                        "obj_oid"    : obj_oid,
+                        "op_type"    : op_type,
+                        "obj_pgid"   : obj_pgid,
+                        "op_from"    : op_from,
+                        "op_misc"    : obj_misc,
+                        "op_epcho"   : op_epcho,
+                        "description": op['description'],
+                        "received_at": op['received_at'], 
+                        "age"        : op['age'],
+                        "duration"   : op['duration'],
+                        "type_data"  : op['type_data'],
+                        }
+            
+            db.histops.insert(ops_dbdata) 
 
 def iterHostOsd(hostname,db):
     print str(datetime.datetime.now()), hostname, "-- Ceph daemon iter host's osds"
