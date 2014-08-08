@@ -529,14 +529,13 @@ def cephDaemonPerf(hostname, db):
             raise RuntimeError('unable to run osd perf data: %s' % (errdata))
         perf_io = StringIO(outdata)
         perf = json.load(perf_io)
-        osd_perf = perf['osd']
      
         db_perf ={
-               "timestamp" : int(round(time.time() * 1000)) ,
-                "osdid"    : idx,
-                "osd_typeid" : osdid,
-                "host"     : DBRef( "hosts",  hostname), 
-                "perf"     : osd_perf,
+                "timestamp"      : int(round(time.time() * 1000)) ,
+                "osdid"         : idx,
+                "osd_typeid"    : osdid,
+                "host"          : DBRef( "hosts",  hostname), 
+                "osd_perf"      : perf,                
               }
         db.perfdump.insert(db_perf)
 
