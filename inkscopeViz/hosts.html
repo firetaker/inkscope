@@ -47,7 +47,7 @@
         <tr ng-repeat="host in orderedData | filter:search:strict" ng-click="showDetail(host._id)">
             <td data-title="'Name'" sortable="'_id'">{{host._id}}</td>
             <td data-title="'IP'" sortable="'hostip'">{{host.hostip}}</td>
-            <td data-title="'View'" sortable="host" style="text-align:center"><i class="icon-eye-open" alt="view details of {{host.name}}" title="view details of {{host.name}}"></i></td>
+            <td data-title="'View'" sortable="host" style="text-align:center"><i class="icon-eye-open" alt="view details of {{host._id}}" title="view details of {{host._id}}"></i></td>
         </tr>
     </table>
 </div>
