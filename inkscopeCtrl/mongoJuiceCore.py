@@ -146,10 +146,45 @@ def listObjects(db, filters, collection, depth ):
         if not _complex :
             select = filters
             template = None
-            
+         
     objs = list(db[collection].find(select, template))
     return _listObjects(db, objs, depth, set()) 
 
+def listObjectsForPages(db, filters, collection, depth,skip_limit ):
+    """
+        get a list of filtered objects from mongo database   
+        depth specified how to dig the dabase to embed the DBRef
+    """
+    
+    select = None
+    template = None
+    sp = 0 # skip 
+    lm = 0 # limit
+    
+    if filters != None:
+        _complex = False
+        if "$select" in filters :
+            select = filters["$select"]
+            _complex = True
+        if "$template" in filters :
+            template = filters["$template"]
+            _complex = True
+        if not _complex :
+            select = filters
+            template = None
+            
+    if skip_limit != None:    
+        if "skip" in skip_limit :
+            sp = int(skip_limit["skip"]) 
+        if "limit" in skip_limit :
+            lm = int(skip_limit["limit"])     
+    #skip and limit
+    # skip = skip * limit 
+    print "sp ",sp," lm :",lm
+    sp = sp * lm
+        
+    objs = list(db[collection].find(select, template).skip(sp).limit(lm))
+    return _listObjects(db, objs, depth, set()) 
 
 def execute(db, command, keyvalues):
     
@@ -256,6 +291,7 @@ def build(db, obj):
 #@app.route('/<db>/<collection>', methods=['GET', 'POST'])
 def find(conf, db, collection):
     depth = int(request.args.get('depth', '0'))
+    limit = int(request.args.get('limit', '0'))
     if request.method == 'POST':
         body_json = request.get_json(force=True)
         db = getClient(conf)[db]
@@ -263,7 +299,12 @@ def find(conf, db, collection):
         return Response(response_body, headers = {"timestamp" :  int(round(time.time() * 1000))}, mimetype='application/json')
     else:
         db = getClient(conf)[db]
-        response_body = dumps(listObjects(db, None, collection, depth))
+        if limit == 0 :          
+            response_body = dumps(listObjects(db, None, collection, depth))
+        else:
+            skip = int(request.args.get('skip', '0'))
+            body_json = {"skip":skip,"limit":limit}
+            response_body = dumps(listObjectsForPages(db, None, collection, depth,body_json))
         return Response(response_body, headers = {"timestamp" :  int(round(time.time() * 1000))}, mimetype='application/json')
 
 # @app.route('/<db>', methods=['POST'])

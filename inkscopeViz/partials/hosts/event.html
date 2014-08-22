@@ -1,0 +1,18 @@
+<h3>Event details for {{tid}}</h3>
+<h4>duration: {{duration}}</h4>
+<h4>received_at {{received_at}}</h4>
+<br />
+<table  class="table table-condensed table-nohead">
+    <thead>
+    <tr>
+        <td> event </td>
+        <td> time </td> 
+        <td> elapsed</td>
+    </tr>
+    </thead>
+    <tr ng-repeat="evt in detailedEvents">
+        <td> {{ evt.event }} </td>
+        <td> {{ evt.time }} </td>
+        <td> {{ evt.elapsed }} </td>
+    </tr>
+</table>

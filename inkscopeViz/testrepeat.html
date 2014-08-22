@@ -1,0 +1,280 @@
+<!doctype html>
+<html ng-app="StatusApp">
+  <head>
+    <meta charset=utf-8>
+    <link rel="stylesheet" type="text/css" media="screen" href="css/testAdmin.css"/>
+    <link rel="stylesheet" type="text/css" media="screen" href="css/nv.d3.css"/>
+    <link rel="stylesheet" type="text/css" media="screen" href="css/bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" media="screen" href="css/rickshaw.min.css"/>
+    <link rel="stylesheet" href="css/tooltip.css"/>
+    <link rel="stylesheet" href="css/animation.css">
+    <script src="scripts/angular/angular.min.js"></script>
+    <script src="scripts/angular/angular-cookies.min.js"></script>
+    <script src="scripts/angular/angular-animate.min.js"></script>
+    <script src="scripts/angular-misc/D3Directives.js"></script>
+    <script src="scripts/angular-misc/angular-commons.js"></script>
+    <script src="scripts/statusApp.js"></script>
+    <script type="text/javascript" src="scripts/d3/d3.v3.min.js" charset="utf-8"></script>
+    <script src="scripts/d3/common.js"></script>
+    <script src="scripts/jquery.min.js"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <script src="scripts/d3/colorbrewer.js"></script>
+
+    <script src="scripts/d3/rickshaw.min.js"></script>
+    <script type="text/javascript" src="scripts/d3/nv.d3.js" charset="utf-8"></script>
+    <!--[if IE]>
+    <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <style>
+      .chart_container {
+        position: relative;
+        width: 350px;
+          height: 50px;
+          font-family: Arial, Helvetica, sans-serif;
+          float:left;
+        text-align: left;
+      }
+      .chart {
+          position: relative;
+          left: 40px;
+      }
+      .axis {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          width:40px;
+      } 
+      .header {
+        background-color:#3ab44a;
+        color:white;
+        font-weight:bold;
+      }
+      .item {
+        padding-left:8px;
+      }
+    </style>
+    <script>
+
+
+    function getQueryString(name) {
+    var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+    var r = window.location.search.substr(1).match(reg);
+    if (r != null) return unescape(r[2]); return null;
+    }
+    var StatusApp = angular.module('StatusApp', ['D3Directives','ngCookies','ngAnimate']).filter('bytes', funcBytesFilter).filter('duration', funcDurationFilter);
+    StatusApp.controller("TeamListCtrl", function ($scope, $http , $cookieStore) {
+      var apiURL = '/ceph-rest-api/';
+      var  graph=[];
+      var  hoverDetail=[];
+      var  yAxis=[];
+      for(var  i=0;i<10;i++){
+        var  chartName="iopschart"+i;
+        var  yaxi="Y_axis"+i;
+        var  read="read"+i;
+        var  write="write"+i;
+        graph[i] = new Rickshaw.Graph( {
+          element: document.getElementById(chartName),
+          width: 300,
+          height: 30,
+          renderer: 'line',
+          series: new Rickshaw.Series.FixedDuration([{ name: read },{ name: write }], undefined, {
+          timeInterval: 3000,
+          maxDataPoints: 100,
+          timeBase: new Date().getTime() / 1000
+          })
+        });
+        hoverDetail[i] = new Rickshaw.Graph.HoverDetail( {
+          graph: graph[i],
+          xFormatter: function(x) { return  ""; },
+          yFormatter: function(y) { return  funcBytes(y)+ "/s" ;}
+        });
+        yAxis[i] = new Rickshaw.Graph.Axis.Y({
+          graph: graph[i],
+          height: 30,
+          orientation: 'left',
+          tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
+          element: document.getElementById(yaxi)
+        });
+        yAxis[i].render();
+        graph[i].render();
+      }
+      TeamListCtrl();
+        setInterval(function () {
+          TeamListCtrl();
+      },5*1000);
+      var  $page=getQueryString("page"); 
+      var  $host=getQueryString("host");
+      if($page==null)
+	$page=0;
+     if($host==null)
+        $host="ubuntu";
+ 
+    function  SetHeadLine(){
+      $http({method:"get",url:"../inkscopeCtrl/ceph/hosts",timeout:4000})
+	.success(function ($data){
+	    var $count=$data.length;
+            var $headString="";
+            for(var $i=0;$i<$count;$i++){
+               if($data[$i]._id!=$host)
+		 $headString=$headString+"<a  href=?host="+$data[$i]._id+">"+$data[$i]._id+"</a>";
+	       else
+                 $headString=$headString+$data[$i]._id;
+	       $headString+="    ";
+           }
+           document.getElementById("headLine").innerHTML=$headString;
+        });
+    }
+    SetHeadLine();
+    function  TeamListCtrl() {
+      $http({method:"get",url:apiURL  + "osd/perf.json",timeout:4000})
+        .success(function (data) {
+          $scope.page=$page;
+          var count = data.output.osd_perf_infos.length;
+	  for(var i=$page*10;i<$page*10+10;i++){
+	    if(i==$page*10&&i<count){
+		$scope.read0=data.output.osd_perf_infos[i].perf_stats.apply_latency_ms;
+		$scope.write0=data.output.osd_perf_infos[i].perf_stats.commit_latency_ms;
+		var  iopsdata = {read0: $scope.read0,write0:$scope.write0};
+		graph[i].series.addData(iopsdata);
+		yAxis[i].render();
+		graph[i].render();
+	    } 
+	    if(i==$page*10+1&&i<count){
+                $scope.read1=data.output.osd_perf_infos[i].perf_stats.apply_latency_ms;
+                $scope.write1=data.output.osd_perf_infos[i].perf_stats.commit_latency_ms;
+                var  iopsdata = {read1: $scope.read1,write1:$scope.write1};
+                graph[i].series.addData(iopsdata);
+                yAxis[i].render();
+                graph[i].render();
+            }
+	    if(i==$page*10+2&&i<count){
+                $scope.read2=data.output.osd_perf_infos[i].perf_stats.apply_latency_ms;
+                $scope.write2=data.output.osd_perf_infos[i].perf_stats.commit_latency_ms;
+                var  iopsdata = {read2: $scope.read2,write2:$scope.write2};
+                graph[i].series.addData(iopsdata);
+                yAxis[i].render();
+                graph[i].render();
+            }
+           if(i==$page*10+3&&i<count){
+                $scope.read3=data.output.osd_perf_infos[i].perf_stats.apply_latency_ms;
+                $scope.write3=data.output.osd_perf_infos[i].perf_stats.commit_latency_ms;
+                var  iopsdata = {read3: $scope.read3,write3:$scope.write3};
+                graph[i].series.addData(iopsdata);
+                yAxis[i].render();
+                graph[i].render();
+            }
+	   if(i==$page*10+4&&i<count){
+                $scope.read4=data.output.osd_perf_infos[i].perf_stats.apply_latency_ms;
+                $scope.write4=data.output.osd_perf_infos[i].perf_stats.commit_latency_ms;
+                var  iopsdata = {read4: $scope.read4,write4:$scope.write4};
+                graph[i].series.addData(iopsdata);
+                yAxis[i].render();
+                graph[i].render();
+            }
+           if(i==$page*10+5&&i<count){
+                $scope.read5=data.output.osd_perf_infos[i].perf_stats.apply_latency_ms;
+                $scope.write5=data.output.osd_perf_infos[i].perf_stats.commit_latency_ms;
+                var  iopsdata = {read5: $scope.read5,write5:$scope.write5};
+                graph[i].series.addData(iopsdata);
+                yAxis[i].render();
+                graph[i].render();
+            }
+           if(i==$page*10+6&&i<count){
+                $scope.read6=data.output.osd_perf_infos[i].perf_stats.apply_latency_ms;
+                $scope.write6=data.output.osd_perf_infos[i].perf_stats.commit_latency_ms;
+                var  iopsdata = {read6: $scope.read6,write6:$scope.write6};
+                graph[i].series.addData(iopsdata);
+                yAxis[i].render();
+                graph[i].render();
+            }
+	   if(i==$page*10+7&&i<count){
+                $scope.read7=data.output.osd_perf_infos[i].perf_stats.apply_latency_ms;
+                $scope.write7=data.output.osd_perf_infos[i].perf_stats.commit_latency_ms;
+                var  iopsdata = {read7: $scope.read7,write7:$scope.write7};
+                graph[i].series.addData(iopsdata);
+                yAxis[i].render();
+                graph[i].render();
+            }
+           if(i==$page*10+8&&i<count){
+                $scope.read8=data.output.osd_perf_infos[i].perf_stats.apply_latency_ms;
+                $scope.write8=data.output.osd_perf_infos[i].perf_stats.commit_latency_ms;
+                var  iopsdata = {read8: $scope.read8,write8:$scope.write8};
+                graph[i].series.addData(iopsdata);
+                yAxis[i].render();
+                graph[i].render();
+            }
+	   if(i==$page*10+9&&i<count){
+                 $scope.read9=data.output.osd_perf_infos[i].perf_stats.apply_latency_ms;
+                 $scope.write9=data.output.osd_perf_infos[i].perf_stats.commit_latency_ms;
+                var  iopsdata = {read9: $scope.read9,write9:$scope.write9};
+                graph[i].series.addData(iopsdata);
+                yAxis[i].render();
+                graph[i].render();
+            }
+           var  container_name="chart_container"+i;
+	   var  container=document.getElementById(container_name);
+	   if(i>=count)
+               container.style.display="none";
+	}
+      });}			  
+ });
+    </script>
+  </head>
+  <body id="hello" ng-controller="TeamListCtrl">
+<header ng-include src="'partials/header.html'" ng-init="pageTitle='Ceph Disk  Status'"></header>
+     <div><h2  id="headLine"></h2><div>
+      <div  id="content">
+	<div class="chart_container"  id="chart_container0">
+          <div class="axis" id="y_axis1"></div>
+          <div class="chart" id="iopschart0"></div>
+         OSD{{page*10}} Read : {{  read0 | bytes:kB }}/s , Write : {{ write0 | bytes:kB }}/s
+	</div>
+	<div class="chart_container"  id="chart_container1">
+          <div class="axis" id="y_axis1"></div>
+          <div class="chart"  id="iopschart1"></div>
+         OSD{{page*10+1}}  Read : {{  read1 | bytes:kB }}/s , Write : {{ write1 | bytes:kB }}/s
+        </div>
+	<div class="chart_container"  id="chart_container2">
+          <div class="axis"  id="y_axis2"></div>
+          <div class="chart"  id="iopschart2"></div>
+            OSD{{page*10+2}} Read : {{  read2 | bytes:kB }}/s , Write : {{ write2 | bytes:kB }}/s
+        </div>
+	<div class="chart_container"  id="chart_container3">
+          <div class="axis"   id="y_axis3"></div>
+          <div class="chart"  id="iopschart3"></div>
+            OSD{{page*10+3}} Read : {{  read3 | bytes:kB }}/s , Write : {{ write3 | bytes:kB }}/s
+        </div>
+	<div class="chart_container"   id="chart_container4">
+          <div class="axis"   id="y_axis4"></div>
+          <div class="chart"  id="iopschart4"></div>
+            OSD{{page*10+4}}, Read : {{  read4 | bytes:kB }}/s , Write : {{ write4 | bytes:kB }}/s
+        </div>
+	<div class="chart_container" id="chart_container5">
+          <div class="axis"   id="y_axis5"></div>
+          <div class="chart"  id="iopschart5"></div>
+            OSD{{page*10+5}},Read : {{  read5 | bytes:kB }}/s , Write : {{ write5 | bytes:kB }}/s
+        </div>
+	<div class="chart_container" id="chart_container6">
+          <div class="axis"   id="y_axis6"></div>
+          <div class="chart"  id="iopschart6"></div>
+          OSD{{page*10+6}}, Read : {{  read6 | bytes:kB }}/s , Write : {{ write6 | bytes:kB }}/s
+        </div>
+	<div class="chart_container" id="chart_container7">
+	  <div class="axis"   id="y_axis7"></div>
+	  <div class="chart"  id="iopschart7"></div>
+	  OSD{{page*10+7}}, Read : {{  read7 | bytes:kB }}/s , Write : {{ write7 | bytes:kB }}/s
+	</div>
+	<div class="chart_container"  id="chart_container8">
+          <div class="axis"   id="y_axis8"></div>
+          <div class="chart"  id="iopschart8"></div>
+           OSD{{page*10+8}},Read : {{  read8 | bytes:kB }}/s , Write : {{ write8 | bytes:kB }}/s
+        </div>
+        <div   class="chart_container" id="chart_container9">
+          <div class="axis"   id="y_axis9"></div>
+          <div class="chart"  id="iopschart9"></div>
+          OSD{{page*10+9}}, Read : {{  read9 | bytes:kB }}/s , Write : {{ write9 | bytes:kB }}/s
+        </div>
+      </div>
+
+  </body>
+</html>
