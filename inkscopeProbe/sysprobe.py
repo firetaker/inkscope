@@ -391,7 +391,7 @@ def initHost(hostname, db):
 diskStatHdr = ["rrqm_s", "wrqm_s", "r_s" ,"w_s","rkB_s", "wkB_s"]
 
 # disk stat
-def pickDiskStat(db, HWdisks):    
+def pickDiskStat(db, hostname, HWdisks):    
     print str(datetime.datetime.now()), "-- Pick Disk Stats"  
     sys.stdout.flush()
     p = subprocess.Popen(args=['iostat','-dx']+[d["logical_name"] for d in HWdisks],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
@@ -406,6 +406,7 @@ def pickDiskStat(db, HWdisks):
             lineio = iostat[0].split()[1:]
             diskstat = dict([(k,float(v.replace(',','.'))) for k,v in zip(diskStatHdr, lineio)])
             diskstat["disk"] = DBRef("disks", d["_id"])
+            diskstat["hostname"] =  hostname
             diskstat["timestamp"] = int(round(time.time() * 1000)) 
             disk_stat_id = db.diskstat.insert(diskstat)
             db.disks.update({"_id": d["_id"]}, {"$set": {"stat": DBRef("diskstat",disk_stat_id)}})
@@ -415,7 +416,7 @@ def pickDiskStat(db, HWdisks):
 
 
 # net stat
-def pickNetStat(db, HWnets):
+def pickNetStat(db, hostname, HWnets):
     print str(datetime.datetime.now()), "-- Pick Net Stats"  
     sys.stdout.flush()
     netio = psutil.net_io_counters(pernic=True)
@@ -424,6 +425,7 @@ def pickNetStat(db, HWnets):
         netstat = netio[net_interface]
         if netstat :
             network_interface_stat = {"network_interface" : DBRef("net", n['_id']),
+                                      "hostname" :  hostname,
                                       "timestamp" : int(round(time.time() * 1000)) ,
                                       "rx" : {"packets": netstat.packets_recv,
                                               "errors": netstat.errin,
@@ -447,6 +449,7 @@ def pickCpuStat(hostname, db):
     cputimes = psutil.cpu_times()
     cpus_stat = {
                  "timestamp" : int(round(time.time() * 1000)) ,
+                 "hostname" :  hostname,
                  "host" : DBRef( "hosts",  hostname),
                  "user": cputimes.user,
                  "system": cputimes.system,
@@ -488,6 +491,7 @@ def pickCephProcesses(hostname, db):
         p_db = {              
                 "timestamp" : int(round(time.time() * 1000)) ,
                 "host" : DBRef( "hosts",  hostname),
+                "hostname" :  hostname,
                 "pid" : cephProc.pid,
                 #"mem_rss" : cephProc.get_ext_memory_info().rss, #deprecated in centos
                 "mem_rss" : cephProc.memory_info_ex().rss,
@@ -541,9 +545,10 @@ def cephDaemonPerf(hostname, db):
         perf = json.load(perf_io)
      
         db_perf ={
-                "timestamp"      : int(round(time.time() * 1000)) ,
+                "timestamp"     : int(round(time.time() * 1000)) ,
                 "osdid"         : idx,
                 "osd_typeid"    : osdid,
+                "hostname"      : hostname,
                 "host"          : DBRef( "hosts",  hostname), 
                 "osd_perf"      : perf,                
               }
@@ -819,7 +824,7 @@ class SysProbeDaemon(Daemon):
             
         netThread = None
         if net_refresh > 0 :
-            netThread = Repeater(evt, pickNetStat, [db, HWnets], net_refresh)
+            netThread = Repeater(evt, pickNetStat, [db, hostname, HWnets], net_refresh)
             netThread.start()
         
         memThread = None
@@ -834,7 +839,7 @@ class SysProbeDaemon(Daemon):
         
         diskThread = None
         if disk_refresh > 0:
-            diskThread = Repeater(evt, pickDiskStat, [db, HWdisks], disk_refresh)
+            diskThread = Repeater(evt, pickDiskStat, [db, hostname,HWdisks], disk_refresh)
             diskThread.start()
         
         partThread = None
