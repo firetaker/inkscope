@@ -33,10 +33,7 @@
         }
     </script></head>
 <body ng-controller="ListCtrl">
-
-
 <header id="header" ng-include src="'partials/header.html'" ng-init="pageTitle='Ceph cluster osds'"></header>
-
 <div>
 <!--div id="status"  >{{status}}</div-->
 <div id="listhost">
@@ -55,8 +52,11 @@
             </td>
         </tr>
     </table>
+    <br/>  
     
-    <div ng-view id="xxcontrol" ></div>
+    <br/>
+    <div id="xxxcontrol"></div>
+    <br/>
 </div>
 </div>
 <div ng-view id="control" ></div>

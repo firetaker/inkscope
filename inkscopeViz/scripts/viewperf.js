@@ -21,59 +21,37 @@ function refreshHosts($http, $scope, $templateCache) {
         });
 }
 
-function show_my_all($http, $scope, $templateCache) {
-	var show_data = {
+function show_my_all($http,$scope) {
+	var show_data_ = {
 		x:10
 	};
 	
-   var style = {
-    default: {
-    point: {
-	   visible: false
-    },
+	$scope.show_data = show_data_;
 
-    line: {
-	   width: 1
-       }
-      }
-    }
-    
-	for(var osdid = 0; osdid < 2; osdid++)
-	{
-		var para ={"osd_typeid" : "osd."+ osdid};	
+
+	for(var my_i = 0; my_i < 2; my_i++)
+	{	
+		var para ={"osd_typeid" : "osd."+ my_i};
 		var uri = inkscopeCtrlURL + "ceph/histops";
+	
 	    $http({method: "post", data: para,  url: uri }).
-	        success(function (data, status) {
-	            var apply = new Array();
-	        	var tids = new Array();
+	        success(function (data, status) {	         
+	        	var line = "y" + (data[0].osdid ? data[0].osdid : "");
+	            var apply = [];
 	            for (var i = 0; i < data.length; i++) {
-	            	console.log(data[i].timestamp);
-	            	tids.push(i);
 	            	apply.push(Number(data[i].duration));            	
 	               }
-	           
-	            show_data[osdid] = apply;
-	            var color = Math.floor((i/2) * 255);
-	            style[osdid] = {
-	              line: {
-	                 stroke: "rgb(" + [color, 255 - color, Math.floor(Math.random() * 255)].join(", ") + ")"
-	              }
-	            }
+	            $scope.show_data[line] = apply;
+	            console.log(line); 
+	            console.log($scope.show_data);
 	        }).
 	        error(function (data, status, headers) {
 	            $scope.status = status;
-	            $scope.osds =  data || "Request failed";
-	            $dialogs.error("<h3>Can't display hosts with id "+$routeParams.hostId+"</h3><br>"+$scope.data);
 	        });
 		
 	}
-
-           
-   var graph = $("#xxcontrol").aristochart({
-       style:style,                   
-       data:show_data
-   });
 }
+
 
 function ListCtrl($scope,$http, $filter, ngTableParams, $location) {
     $scope.tableParams = new ngTableParams({
@@ -86,22 +64,39 @@ function ListCtrl($scope,$http, $filter, ngTableParams, $location) {
         counts: [], // hide page counts control
         total: 1,  // value less than count hide pagination
         getData: function ($defer, params) {
-            // use build-in angular filter
             $scope.orderedData = params.sorting() ?
                 $filter('orderBy')($scope.osds, params.orderBy()) :
                 data;
-            // $defer.resolve($scope.orderedData.slice((params.page() - 1) *
-			// params.count(), params.page() * params.count()));
         }
     });
     
+    var style = {
+      default: {
+       point: {
+	       visible: false
+       },
+
+       line: {
+	      width: 1
+      }
+     }
+    }
+    
+    
+    
+    var data;
     show_my_all($http,$scope);
     refreshHosts($http,$scope);
+    
     setInterval(function(){
         // refreshHosts($http, $scope)
-    }, 10000);
-    var data;
-
+    	console.log($scope.show_data)
+    	var graph = $("#xxxcontrol").aristochart({
+           style:style,                   
+            data: $scope.show_data
+        });
+    }, 1000);
+    
     $scope.showDetail = function (hostid) {
         $location.path('/detail/'+hostid);
     }
@@ -119,23 +114,24 @@ function DetailCtrl($scope, $http, $routeParams, $dialogs) {
             var apply = new Array();
         	var tids = new Array();
             for (var i = 0; i < data.length; i++) {
-            	console.log(data[i].timestamp);
+            	//console.log(data[i].timestamp);
             	tids.push(i);
             	apply.push(Number(data[i].duration));            	
                }
             console.log(apply);
             
-var style = {
-	default: {
-		point: {
-			visible: false
-		},
+            var style = {
+	          default: {
+		        point: {
+			       visible: false
+		       },
 
-		line: {
-			width: 1
-		}
-	}
-} 
+		       line: {
+			      width: 1
+		        }
+	           }
+             } 
+            
             var graph = $("#iopschart").aristochart({
                    style:style,                   
             	   data: {
