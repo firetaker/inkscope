@@ -512,12 +512,14 @@ def pickCephProcesses(hostname, db):
         if cephProc.name() == 'ceph-osd' :
             #osd       
             p_db["osd"] = DBRef("osd", id)
+            p_db["daemontype"] = "osd."+ id
             db.processstat.insert(p_db)
             #procid = db.processstat.insert(p_db)
             #db.osd.update({'_id' : id},{"$set" : {"process" : DBRef("processstat",procid)}})            
         elif cephProc.name() == 'ceph-mon' :
             #mon 
             p_db["mon"] = DBRef("mon", id)
+            p_db["daemontype"] = "mon."+id
             db.processstat.insert(p_db)
             #procid = db.processstat.insert(p_db)
             #db.mon.update({'_id' : id},{"$set" : {"process" : DBRef("processstat",procid)}})           

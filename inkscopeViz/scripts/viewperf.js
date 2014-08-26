@@ -36,7 +36,7 @@ function show_my_all($http,$scope) {
 	
 	    $http({method: "post", data: para,  url: uri }).
 	        success(function (data, status) {	         
-	        	var line = "y" + (data[0].osdid ? data[0].osdid : "");
+	        	var line = db
 	            var apply = [];
 	            for (var i = 0; i < data.length; i++) {
 	            	apply.push(Number(data[i].duration));            	
