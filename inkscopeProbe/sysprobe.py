@@ -406,6 +406,7 @@ def pickDiskStat(db, hostname, HWdisks):
             lineio = iostat[0].split()[1:]
             diskstat = dict([(k,float(v.replace(',','.'))) for k,v in zip(diskStatHdr, lineio)])
             diskstat["disk"] = DBRef("disks", d["_id"])
+            diskstat["logical_name"] = d["logical_name"]
             diskstat["hostname"] =  hostname
             diskstat["timestamp"] = int(round(time.time() * 1000)) 
             disk_stat_id = db.diskstat.insert(diskstat)

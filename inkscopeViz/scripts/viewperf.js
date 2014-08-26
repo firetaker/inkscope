@@ -93,7 +93,7 @@ function ListCtrl($scope,$http, $filter, ngTableParams, $location) {
     	console.log($scope.show_data)
     	var graph = $("#xxxcontrol").aristochart({
            style:style,                   
-            data: $scope.show_data
+           data: $scope.show_data
         });
     }, 1000);
     
