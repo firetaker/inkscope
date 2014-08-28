@@ -295,7 +295,14 @@ def find(conf, db, collection):
     if request.method == 'POST':
         body_json = request.get_json(force=True)
         db = getClient(conf)[db]
-        response_body = dumps(listObjects(db, body_json, collection, depth))
+        
+        if limit == 0:
+            response_body = dumps(listObjects(db, body_json, collection, depth))
+        else:
+            skip = int(request.args.get('skip', '0'))
+            skip_limit = {"skip":skip,"limit":limit}
+            response_body = dumps(listObjectsForPages(db, body_json, collection, depth,skip_limit))
+        
         return Response(response_body, headers = {"timestamp" :  int(round(time.time() * 1000))}, mimetype='application/json')
     else:
         db = getClient(conf)[db]

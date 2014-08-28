@@ -68,6 +68,7 @@ def pickMem(hostname, db):
     #convert to base
     mem4db = {
         "timestamp" : int(round(time.time() * 1000)),
+        "hostname" : hostname,
         "total" : res.total,
         "used" : res.used,
         "free" : res.free,
@@ -87,6 +88,7 @@ def pickSwap(hostname, db):
     #convert to base
     swap4db = {
                "timestamp" : int(round(time.time() * 1000)),
+               "hostname" : hostname,
                "total" : res.total,
                "used" : res.used,
                "free" : res.free,
@@ -107,6 +109,7 @@ def getPartitions(hostname):
     for p in _partitions :
         res = {
                "_id" : hostname+":"+p.device,
+               "hostname" : hostname,
                "dev" : p.device,
                "mountpoint": p.mountpoint,
                "fs" : p.fstype,
@@ -127,6 +130,7 @@ def pickPartitionsStat(hostname, db):
         
         res = {
                "timestamp" : int(round(time.time() * 1000)),
+               "hostname" : hostname,
                "total" : part_stat.total,
                "used" : part_stat.used,
                "free" : part_stat.free,
