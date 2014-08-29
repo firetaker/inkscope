@@ -1,0 +1,37 @@
+<div id="NetworkCtrl">
+        <table width="100%" ng-table="tableParams" class="table table-condensed table-hover">
+        <tr  align="middle"><h3  align="middle">NETWORK  STATE</h3></tr>
+
+        <tr  align="middle"   width="100%" >
+          <td style="text-align:middle">NetworkInterface</td>
+          <td style="text-align:middle">timestamp</td>
+          <td width='200' style="text-align:middle">tx_bytes</td>
+         <td width='200' style="text-align:middle">tx_packets</td>
+         <td width='200' style="text-align:middle">tx_dropped</td>
+
+         <td width='200' style="text-align:middle">tx_errors</td>
+          <td width='200' style="text-align:middle">rx_bytes</td>
+         <td width='200' style="text-align:middle">rx_dropped</td>
+
+         <td width='200' style="text-align:middle">rx_packages</td>
+         <td width='200' style="text-align:middle">rx_errors</td>
+        </tr>
+        <tr ng-repeat="netData in  netDataList"   width="100%" >
+          <td data-title="'interface'" sortable="'_id'">{{netData.network_interface.$id}}</td>
+          <td data-title="'timestamp'" sortable="'timestamp'">{{netData.timestamp}}</td>
+            <!--td data-title="'Ruleset'" sortable="'ruleset'">{{pool.ruleset}}</td-->
+            <!--td data-title="'Size'" sortable="'size'">{{pool.size}}</td-->
+          <td data-title="'rx'" width='200'> {{netData.tx.bytes}}</td>
+          <td data-title="'rx'" width='200'> {{netData.tx.packets}}</td>
+          <td data-title="'rx'" width='200'> {{netData.tx.dropped}}</td>
+          <td data-title="'rx'" width='200'> {{netData.tx.errors}}</td>
+	  <td data-title="'rx'" width='200'> {{netData.rx.bytes}}</td>
+          <td data-title="'rx'" width='200'> {{netData.rx.packets}}</td>
+          <td data-title="'rx'" width='200'> {{netData.rx.dropped}}</td>
+          <td data-title="'rx'" width='200'> {{netData.rx.errors}}</td>
+
+        </tr>
+    </table>
+</div>
+<div  id="NetworkRxChart"></div>
+<div  id="NetworkTxChart"></div>

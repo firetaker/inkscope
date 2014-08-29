@@ -9,21 +9,27 @@ function getQueryString(name) {
     if (r != null) return unescape(r[2]); return null;
 }
 
+
+
+function datetime_to_unix(datetime){
+    var tmp_datetime = datetime.replace(/:/g,'-');
+    tmp_datetime = tmp_datetime.replace(/ /g,'-');
+    var arr = tmp_datetime.split("-");
+    var now = new Date(Date.UTC(arr[0],arr[1]-1,arr[2],arr[3]-8,arr[4],arr[5]));
+    return parseInt(now.getTime());
+}
+ 
+
 angular.module('pgApp', ['ngRoute','ngTable','D3Directives','ui.bootstrap','dialogs'])
     .filter('bytes', funcBytesFilter)
     .config(function ($routeProvider) {
         $routeProvider.
             when('/', {controller: ListCtrl}).//, templateUrl: 'partials/pools/aboutPools.html'}).
             when('/detail/:poolNum', {controller: DetailCtrl, templateUrl: 'partials/detailPG.html'}).
-            otherwise({redirectTo: '/'})
-
-    });
-
-
-
+            otherwise({redirectTo: '/'})}
+);
 
 function refreshPools($http, $rootScope, $templateCache) {
-
     var  $page=getQueryString("page");
     if($page==null)
         $page=1;
@@ -35,7 +41,17 @@ function refreshPools($http, $rootScope, $templateCache) {
            else
         $rootScope.leftPage=$page-1;
     $rootScope.rightPage=$page-1+2;
-    $http({method: "get", url: "../inkscopeCtrl/ceph/pg?page="+$page+"&skip="+$skip+"&limit="+$limit, cache: $templateCache}).
+    var  $search=document.getElementById('search').value;
+    var  $from=document.getElementById('from').value;
+    var  $to=document.getElementById('to').value;
+    console.log($search);
+    console.log($from);
+    console.log(datetime_to_unix($to));
+    $searchData="";
+    if($search!="")
+	$searchData={"_id" : $search };
+    
+    $http({method: "get",data:$searchData,url: "../inkscopeCtrl/ceph/pg?page="+$page+"&skip="+$skip+"&limit="+$limit, cache: $templateCache}).
         success(function (data, status) {
 	    var $len=data.length;
 	    for(var  $i=0;$i<$len;$i++){
@@ -48,8 +64,6 @@ function refreshPools($http, $rootScope, $templateCache) {
             //alert("refresh pools failed with status "+status);
             $rootScope.status = status;
             $rootScope.pools =  data || "Request failed";
-            $rootScope.stats.total_used = "N/A";
-            $rootScope.stats.total_space = "N/A";
         });
 }
 
@@ -61,26 +75,11 @@ function ListCtrl($rootScope,$http, $filter, ngTableParams) {
     }, 10000);
 }
 
-function SnapshotCtrl($rootScope,$scope, $http, $routeParams, $location, $dialogs) {
-    $scope.poolNum = $routeParams.poolNum;
-    $scope.poolName = $routeParams.poolName;
-    var uri = inkscopeCtrlURL + "pools/"+$scope.poolNum+"/snapshot" ;
-
-    $scope.submit = function () {
-        $scope.status = "en cours ...";
-
-        $http({method: "post", url: uri, data: "json={\"snapshot_name\":\""+$scope.snap_name+"\"}", headers: {'Content-Type': 'application/x-www-form-urlencoded'}}).
-            success(function (data, status) {
-                $rootScope.status = status;
-                $dialogs.notify("Snapshot creation for pool \""+ $scope.poolName+"\"","Snapshot <strong>"+$scope.snap_name+"</strong> was created");
-                $location.path('/detail/'+$scope.poolNum);
-            }).
-            error(function (data, status, headers) {
-                $scope.status = status;
-                $scope.data =  data || "Request failed";
-                $dialogs.error("<h3>Can't create snapshot for pool \""+ $scope.poolName+"\"</h3><br>"+$scope.data);
-            });
-    }
+function SearchCtrl($rootScope,$http, $filter, ngTableParams) {
+    refreshPools($http,$rootScope);
+    setInterval(function(){
+        refreshPools($http, $rootScope)
+    }, 10000);
 }
 
 function DetailCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
@@ -136,22 +135,4 @@ function DetailCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
             $rootScope.pools =  data || "Request failed";
             $dialogs.error("<h3>Can't display pools with num "+$routeParams.poolNum+"</h3><br>"+$scope.data);
         });
-
-
-    $scope.removeSnapshot = function () {
-        var uri = inkscopeCtrlURL + "pools/"+$scope.detailedPool.pool+"/snapshot/"+$scope.snap_name ;
-        $scope.status = "en cours ...";
-        $http({method: "delete", url: uri}).
-            success(function (data, status) {
-                $rootScope.status = status;
-                $dialogs.notify("Snapshot deletion for pool \""+ $scope.detailedPool.pool_name+"\"","Snapshot <strong>"+$scope.snap_name+"</strong> was deleted");
-                $route.reload();
-            }).
-            error(function (data, status, headers) {
-                $scope.status = status;
-                $scope.data =  data || "Request failed";
-                $dialogs.error("<h3>Can't delete snapshot for pool \""+ $scope.detailedPool.pool_name+"\"</h3><br>"+$scope.data);
-            });
-    }
 }
-

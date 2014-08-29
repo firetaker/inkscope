@@ -1,0 +1,23 @@
+<div id="Swapstat">
+        <table width="100%" ng-table="tableParams" class="table table-condensed table-hover">
+  <tr  align="middle"><h3  align="middle">SWAP  STATE</h3></tr>
+
+        <tr  align="middle"   width="100%" >
+          <td style="text-align:middle">host</td>
+          <td style="text-align:middle">timestamp</td>
+          <td style="text-align:middle">used</td>
+          <td style="text-align:middle">free</td>
+          <td style="text-align:middle">total</td>
+        </tr>
+        <tr ng-repeat="swapData in  swapDataList"   width="100%" >
+          <td data-title="'host'" sortable="'host.$id'">{{swapData.host.$id}}</td>
+            <td data-title="'timestamp'" sortable="'timestamp'">{{swapData.timestamp}}</td>
+            <!--td data-title="'Ruleset'" sortable="'ruleset'">{{pool.ruleset}}</td-->
+            <!--td data-title="'Size'" sortable="'size'">{{pool.size}}</td-->
+            <td data-title="'softirq'" style="text-align:middle">{{swapData.used}}</td>
+            <td data-title="'system'" style="text-align:middle">{{swapData.free}}</td>
+            <td data-title="'irq'" style="text-align:middle">{{swapData.total}}</td>
+        </tr>
+    </table>
+</div>
+<div  id="SwapChart"></div>

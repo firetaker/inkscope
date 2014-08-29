@@ -1,60 +1,37 @@
-/**
- * Created by arid6405 on 11/21/13.
- */
-
-
-function getQueryString(name) {
-    var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
-    var r = window.location.search.substr(1).match(reg);
-    if (r != null) return unescape(r[2]); return null;
-}
-
-
-Date.prototype.format = function(format) {
-    var o = {
-        "M+": this.getMonth() + 1,
-          // month
-        "d+": this.getDate(),
-          // day
-        "h+": this.getHours(),
-          // hour
-        "m+": this.getMinutes(),
-          // minute
-        "s+": this.getSeconds(),
-          // second
-        "q+": Math.floor((this.getMonth() + 3) / 3),
-          // quarter
-        "S": this.getMilliseconds()
-          // millisecond
-    };
-    if (/(y+)/.test(format) || /(Y+)/.test(format)) {
-        format = format.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
-    }
-    for (var k in o) {
-        if (new RegExp("(" + k + ")").test(format)) {
-            format = format.replace(RegExp.$1, RegExp.$1.length == 1 ? o[k] : ("00" + o[k]).substr(("" + o[k]).length));
-	}
-    }
-    return format;
-};
-function timestampformat(timestamp) {
-    return (new Date(timestamp)).format("yyyy-MM-dd hh:mm:ss");
-}
-
-
-
-angular.module('statApp', ['ngRoute','ngTable','D3Directives','ui.bootstrap','dialogs'])
+/*添加模块，并添加js跳转路由*/
+var statApp=angular.module('statApp', ['ngRoute','ngTable','D3Directives','ui.bootstrap','dialogs'])
     .filter('bytes', funcBytesFilter)
     .config(function ($routeProvider) {
         $routeProvider.
-            when('/', {controller: ListCtrl}).//, templateUrl: 'partials/pools/aboutPools.html'}).
-            when('/detail/:poolID', {controller: DetailCtrl, templateUrl: 'partials/detailStat.html'}).
-            otherwise({redirectTo: '/'})
+            when('/', {controller: ListCtrl}).
+	    when('/detail/:poolID/CPUstat', {controller: CpuCtrl, templateUrl: 'partials/detailCpuStat.html'}).             //CPU详细信息展示
+            when('/detail/:poolID/MEMstat', {controller: MemCtrl, templateUrl: 'partials/detailMemStat.html'}).             //Mem详细信息展示
+            when('/detail/:poolID/Networkstat', {controller: NetworkCtrl, templateUrl: 'partials/detailNetworkStat.html'}). //网卡详细信息展示
+            when('/detail/:poolID/Swapstat', {controller: SwapCtrl, templateUrl: 'partials/detailSwapStat.html'}).          //交换空间详细信息展示
+ 	    otherwise({redirectTo: '/'})                                                                                    //重定向到默认路由
     });
 
+jQuery(function () {
+    // 时间设置
+    jQuery('#from').datetimepicker({
+        timeFormat: "HH:mm:ss",
+        dateFormat: "yy-mm-dd"
+    });
+});
+jQuery(function () {
+    // 时间设置
+    jQuery('#to').datetimepicker({
+        timeFormat: "HH:mm:ss",
+        dateFormat: "yy-mm-dd"
+    });
 
-function  SwapCtrl($http, $rootScope,$host, $templateCache) {
-    $http({method:"post",data:"hostname="+$host,url:"../inkscopeCtrl/ceph/swapstat",timeout:4000})
+});
+function  SwapCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
+    $host=$routeParams.poolID;
+    var $timeFromTo=TimeFromTo();
+    var para = {"hostname":$host,"timestamp":$timeFromTo};
+
+    $http({method:"post",data :JSON.stringify(para),url:"../inkscopeCtrl/ceph/swapstat",timeout:4000})
         .success(function (data) {
             var  len=data.length;
             var dataList=[];
@@ -62,12 +39,45 @@ function  SwapCtrl($http, $rootScope,$host, $templateCache) {
                 dataList[0]=data[len-1];
                 dataList[0].timestamp=timestampformat(dataList[0].timestamp);
             }
+	    var arr_used = new Array();
+            var arr_free = new Array();
+            var arr_cached = new Array();
+            var tids = new Array();
+            for (var i = 0; i < data.length; i++) {
+                //console.log(data[i].timestamp);
+                tids.push(i);
+                arr_used.push(Number(data[i].used));
+                arr_free.push(Number(data[i].free));
+            }
+            var style = {
+            default: {
+                point: {
+                    visible: false
+                },
+
+                line: {
+                    width: 1
+                }
+            }
+            }
+            console.log(len);
+            var graph = $("#SwapChart").aristochart({
+                style:style,
+                data: {
+                    x: tids,
+                    y: arr_used,
+                    y1:arr_free
+                }
+            });
             $rootScope.swapDataList=dataList;
         });
 }
 
-function  CpuCtrl($http, $rootScope,$host, $templateCache) {
-    $http({method:"post",data:"hostname="+$host,url:"../inkscopeCtrl/ceph/cpustat",timeout:4000})
+function  CpuCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
+    $host=$routeParams.poolID;
+    var $timeFromTo=TimeFromTo();
+    var para = {"hostname":$host,"timestamp":$timeFromTo};
+    $http({method:"post",data :JSON.stringify(para),url:"../inkscopeCtrl/ceph/cpustat",timeout:4000})
         .success(function (data) {
             var  len=data.length;
             var dataList=[];
@@ -75,11 +85,43 @@ function  CpuCtrl($http, $rootScope,$host, $templateCache) {
                 dataList[0]=data[len-1];
                 dataList[0].timestamp=timestampformat(dataList[0].timestamp);
             }
-             $rootScope.cpudataList=dataList;
+            console.log(len);
+	   
+	    var apply = new Array();
+	    var tids = new Array();
+	    for (var i = 0; i < data.length; i++) {
+		//console.log(data[i].timestamp);
+		tids.push(i);
+		apply.push(Number(data[i].iowait));            
+	    }
+	    var style = {
+	        default: {
+		    point: {
+			visible: false
+		    },
+
+		    line: {
+			width: 1
+		    }
+		}
+	    } 
+            console.log(len);
+
+	    var graph = $("#iowait").aristochart({
+		style:style,                   
+		data: {
+		    x: tids,
+		    y: apply
+		}
+            });
+            $rootScope.cpudataList=dataList;
         });
 }
-function  MemCtrl($http, $rootScope,$host,$templateCache) {
-    $http({method:"post",data:"hostname="+$host,url:"../inkscopeCtrl/ceph/memstat",timeout:4000})
+function  MemCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
+    $host=$routeParams.poolID;
+    var $timeFromTo=TimeFromTo();
+    var para = {"hostname":$host,"timestamp":$timeFromTo};
+    $http({method:"post",data:JSON.stringify(para), headers:{'Content-Type': 'application/x-www-form-urlencoded'},url:"../inkscopeCtrl/ceph/memstat",timeout:4000})
         .success(function (data) {
             var  len=data.length;
             var dataList=[];
@@ -87,25 +129,127 @@ function  MemCtrl($http, $rootScope,$host,$templateCache) {
                 dataList[0]=data[len-1];
                 dataList[0].timestamp=timestampformat(dataList[0].timestamp);
             }
+            var arr_used = new Array();
+	    var arr_free = new Array();
+	    var arr_cached = new Array();
+            var tids = new Array();
+            for (var i = 0; i < data.length; i++) {
+                //console.log(data[i].timestamp);
+                tids.push(i);
+                arr_used.push(Number(data[i].used));
+		arr_cached.push(Number(data[i].cached));
+		arr_free.push(Number(data[i].free));
+	    }
+            var style = {
+            default: {
+                point: {
+                    visible: false
+                },
+
+                line: {
+                    width: 1
+                }
+            }
+            }
+            console.log(len);
+            var graph = $("#MemChart").aristochart({
+                style:style,
+                data: {
+                    x: tids,
+                    y: arr_used,
+		    y1:arr_free,
+		    y2:arr_cached
+		}
+            });
             $rootScope.memdataList=dataList;
         });
 }
-function  NetworkCtrl($http, $rootScope, $host,$templateCache) {
-    $http({method:"post",data:"hostname="+$host,url:"../inkscopeCtrl/ceph/netstat",timeout:4000})
+function  NetworkCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
+    var $host=$routeParams.poolID;
+    var $timeFromTo=TimeFromTo();
+    var para = {"hostname":$host,"timestamp":$timeFromTo};
+    $http({method:"post",data:JSON.stringify(para),url:"../inkscopeCtrl/ceph/netstat",timeout:4000})
         .success(function (data) {
-            var  len=data.length;
-            var dataList=[];
-            if(len>0){
-                dataList[0]=data[len-1];
-                dataList[0].timestamp=timestampformat(dataList[0].timestamp);
-            }
-             $rootScope.netDataList=dataList;
+            var  $len=data.length;
+            var $dataList=new Array();
+	    var  $arrRxList=new Array();
+            var  $arrTxList=new Array();
+     	    while($len!=0){
+		$dataList.push(data[0]);
+		var $count=0;
+		var  $arrRx=new Array();
+		var  $arrTx=new Array();
+
+		for(var  $i=0;$i<$len;$i++){
+		    if($i==0){
+			$arrRx.push(data[$i].rx.bytes);
+			$arrTx.push(data[$i].tx.bytes);
+			data.remove($i);
+                        $i--;
+                        $len--;
+                        $count++;
+			continue;
+		    }
+		    if(data[$i].network_interface.$id==$arr[0].network_interface.$id){
+			$arrRx.push(data[$i].rx.bytes);
+                        $arrTx.push(data[$i].tx.bytes);
+                        data.remove($i);
+                        $i--;
+                        $len--;
+                        $count++;
+                        continue;
+		    }
+		}
+		$arrRxList.push($arrRx);
+		$arrTxList.push($arrTx);
+	    }
+
+	    var $lenRx=$arrRxList[0].length;
+	    var $lenTx=$arrRxList[0].length;
+	    var $len2=$arrRxList.length;
+	    var $dataRx  =new  Map();
+	    var $dataTx  =new  Map();
+
+	    $dataRx.put("x",$lenRx);
+	    $dataTx.put("x",$lenTx);
+            for(var $i=0;$i<$len2;$i++){
+		if($i!=0){
+		    $dataTx.put("y"+$i,$arrTxList[$i]);
+		    $dataRx.put("y"+$i,$arrRxList[$i]);
+
+		}
+		else{
+		    $dataTx.put("y",$arrTxList[$i]);
+		    $dataRx.put("y",$arrRxList[$i]);
+		}
+	    }
+	    var style = {
+            default: {
+                point: {
+                    visible: false
+                },
+
+                line: {
+                    width: 1
+                }
+              }
+            }	    
+	    var $networkRx=new Map();
+            var $networkTx=new Map();
+
+	    $networkRx.put("data",$dataRx.container);
+            $networkTx.put("data",$dataTx.container);
+            $networkRx.put("style",style);
+            $networkTx.put("style",style);
+	    var graph = $("#NetworkRxChart").aristochart($networkRx.container);
+            var graph = $("#NetworkTxChart").aristochart($networkTx.container);
+            $rootScope.netDataList=$dataList;
         });
 
 }
 
 function  DiskCtrl($http, $rootScope,$host, $templateCache) {
-    $http({method:"post",data:"hostname="+$host,url:"../inkscopeCtrl/ceph/diskstat",timeout:4000})
+    $http({method:"post",data:{"hostname" : $host},url:"../inkscopeCtrl/ceph/diskstat",timeout:4000})
         .success(function (data) {
             var dataLen=data.length;
             var dataCount=0;
@@ -125,24 +269,27 @@ function  DiskCtrl($http, $rootScope,$host, $templateCache) {
 		dataList[i-dataStartNumber].timestamp=timestampformat(dataList[i-dataStartNumber].timestamp);
             }
              $rootScope.diskDataList=dataList;
-        });
-}
+        
+ });
+ }
 
 
-function refreshPools($http, $rootScope,$templateCache) {
+ function refreshPools($http, $rootScope,$templateCache) {
 
-    var  $page=getQueryString("page");
-    if($page==null)
-        $page=1;
-    var  $pageNumber=20;
-    var  $skip=$page-1;
-    var  $limit=$pageNumber;
-    if($page==1)
-        $rootScope.leftPage=1;
-           else
-        $rootScope.leftPage=$page-1;
-    $rootScope.rightPage=$page-1+2;
-    $http({method: "get",url: "../inkscopeCtrl/ceph/hosts?skip="+$skip+"&limit="+$limit, cache: $templateCache}).
+     var  $page=getQueryString("page");
+     if($page==null)
+	 $page=1;
+     var  $pageNumber=20;
+     var  $skip=$page-1;
+     var  $limit=$pageNumber;
+     if($page==1)
+	 $rootScope.leftPage=1;
+     else
+	 $rootScope.leftPage=$page-1;
+     $rootScope.rightPage=$page-1+2;
+
+     $rootScope.rightPage=$page-1+2;
+     $http({method: "get",url: "../inkscopeCtrl/ceph/hosts?skip="+$skip+"&limit="+$limit, cache: $templateCache}).
         success(function (data, status) {
 	    var $len=data.length;
 	    for(var  $i=0;$i<$len;$i++){
@@ -162,44 +309,6 @@ function refreshPools($http, $rootScope,$templateCache) {
 
 
 function ListCtrl($rootScope,$http, $filter, ngTableParams) {
-    refreshPools($http,$rootScope);
-    setInterval(function(){
-        refreshPools($http, $rootScope)
-    }, 10000);
+    var  $searchData;
+    refreshPools($http,$rootScope,$searchData);
 }
-
-function DetailCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
-    var  $page=getQueryString("page");
-    if($page==null)
-        $page=1;
-    var  $pageNumber=20;
-    var  $skip=$page-1;
-    var  $limit=$pageNumber;
-     var uri = inkscopeCtrlURL + "/ceph/pg?skip="+$skip+"&limit="+$limit;
-    var v;
-    var v2 = '';
-    $host=$routeParams.poolID;
-    CpuCtrl($http, $rootScope ,$host);//申明函数
-    setInterval(function () {
-        CpuCtrl($http, $rootScope,$host);
-    },10*1000);
-
-    MemCtrl($http, $rootScope,$host);
-    setInterval(function () {
-        MemCtrl($http, $rootScope,$host);
-    },10*1000);
-SwapCtrl($http, $rootScope,$host);
-    setInterval(function () {
-        SwapCtrl($http, $rootScope,$host);
-    },10*1000);
-
-NetworkCtrl($http, $rootScope,$host);
-    setInterval(function () {
-        NetworkCtrl($http, $rootScope,$host);
-    },10*1000);
-DiskCtrl($http, $rootScope,$host);//申明函数
-    setInterval(function () {
-        DiskCtrl($http, $rootScope,$host);
-    },3*1000);
-}
-

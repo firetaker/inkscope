@@ -1,0 +1,101 @@
+<!doctype html>
+<html ng-app="statApp">
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+  <script src="scripts/angular/angular.min.js"></script>
+  <script src="scripts/angular/angular-route.min.js"></script>
+  <script src="scripts/angular/angular-sanitize.min.js"></script>
+  <script src="scripts/angular-misc/ng-table.min.js"></script>
+  <script src="scripts/angular-misc/angular-commons.js"></script>
+  <script src="scripts/angular-misc/ui-bootstrap-tpls-0.10.0.min.js"></script>
+  <script src="scripts/angular-misc/dialogs.v2.min.js" type="text/javascript"></script>
+  <script src="scripts/jquery.min.js"></script>
+  <script src="scripts/common.js"></script>
+  <script src="scripts/statApp.js"></script>
+  <link type="text/css" href="css/jquery-ui.css" rel="stylesheet" />
+  
+  <link href="css/jquery-ui-timepicker-addon.css" type="text/css" />
+  <link href="css/demos.css" rel="stylesheet" type="text/css" />
+
+  <script type="text/javascript" src="scripts/jquery-ui.min.js"></script>
+  <script src="scripts/jquery-ui-timepicker-addon.js" type="text/javascript"></script>
+
+  <script src="scripts/jquery.ui.datepicker-zh-CN.js.js" type="text/javascript" charset="gb2312"></script>
+  <script src="scripts/jquery-ui-timepicker-zh-CN.js" type="text/javascript"></script>
+ 
+  <script src="scripts/bootstrap.min.js"></script>
+  <script src="scripts/angular-misc/D3Directives.js"></script>
+  <script src="scripts/Aristochart.js"></script>
+  <script src="scripts/Aristochart-min.js"></script>
+  <script src="scripts/d3/d3.v3.min.js"></script>
+  <script src="scripts/d3/common.js"></script>
+  <script src="scripts/d3/colorbrewer.js"></script>
+  <link rel="stylesheet" href="css/testAdmin.css" />
+  <link rel="stylesheet" href="css/tooltip.css" />
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="scripts/angular-misc/ng-table.min.css">
+
+    <title>Ceph host  stat  view</title>
+<style>
+.ng-table-pager {
+    display: none;     //将ng-table的分页机制隐藏
+}
+#control{
+    margin : 2em;
+    float:left;
+    width :620px;
+    border: solid gray 1px ;
+    border-radius: 1em;
+    padding: 1em;
+    overflow-x :hidden ;
+    overflow-y :auto ;
+    }
+</style>
+<title>Ceph HOST  view</title>
+</head>
+<body ng-controller="ListCtrl">
+
+<header ng-include src="'partials/header.html'" ng-init="pageTitle='Ceph host  view'"></header>
+<!--div id="status"  >{{status}}</div-->
+<div id="listpool">
+     <table>
+        <tr>
+            <th><input type="text" id="search" class="search-query" placeholder="Search"></th>
+            <th>&nbsp; &nbsp; </th>
+        </tr>
+           <tr>
+            <td>From：<input type="timepicker" id="from"></td>
+            <td>To：<input type="timepicker" id="to"></td>
+        </tr>
+     </table>
+
+    <table ng-table="tableParams" class="table table-condensed table-hover">
+        <tr ng-repeat="pool in orderedData">
+            <td data-title="'Id'">{{pool._id}}</td>
+            <td data-title="'pool.hostip'" >{{pool.hostip}}</td>
+	    <td data-title="'timestamp'" >{{pool.timestamp}}</td>
+	    <td data-title="'View'" style="text-align:center">
+	       <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">Stat<span class="caret"></span></a>
+                <ul class="dropdown-menu">
+                    <li><a href="#detail/{{pool._id}}/CPUstat" title="Cpu stat">cpu status</a>
+                    <li><a href="#detail/{{pool._id}}/MEMstat" title="Mem status">Mem status</a></li>
+                    <li><a href="#detail/{{pool._id}}/Networkstat" title="Network status">Network status</a></li>
+                    <li><a href="#detail/{{pool._id}}/Swapstat" title="Swap status">Swap status</a></li>
+                </ul>
+               </li>
+	    </td>
+        </tr>
+	<tr  align="middle">
+	  <td><a  href="?page={{leftPage}}">上一页</a></td>
+	  <td><a  href="?page={{rightPage}}">下一页</a></td>
+	</tr>
+	
+    </table>
+</div>
+</div>
+<div ng-view id="control" ></div>
+
+<canvas height="400" width="640"></canvas>
+</body>
+</html>
+

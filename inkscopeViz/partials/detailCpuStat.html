@@ -1,0 +1,33 @@
+<!--div id="status"  >{{status}}</div-->
+<div id="CPUStat">
+        <table width="100%" ng-table="tableParams" class="table table-condensed table-hover">
+	<tr  align="middle"><h3  align="middle">CPU  STATE</h3></tr>
+        <tr  align="middle"   width="100%" >
+          <td style="text-align:middle">host</td>
+          <td style="text-align:middle">timestamp</td>
+          <td style="text-align:middle">softirq</td>
+          <td style="text-align:middle">iowait</td>
+          <td style="text-align:middle">system</td>
+          <td style="text-align:middle">user</td>
+          <td style="text-align:middle">irq</td>
+          <td style="text-align:middle">steal</td>
+          <td style="text-align:middle">idle</td>
+          <td style="text-align:middle">guest</td>
+        </tr>
+        <tr ng-repeat="cpudata in  cpudataList"   width="100%" >
+          <td data-title="'host'" sortable="'host.$id'">{{cpudata.host.$id}}</td>
+            <td data-title="'timestamp'" sortable="'timestamp'">{{cpudata.timestamp}}</td>
+            <!--td data-title="'Ruleset'" sortable="'ruleset'">{{pool.ruleset}}</td-->
+            <!--td data-title="'Size'" sortable="'size'">{{pool.size}}</td-->
+            <td data-title="'softirq'" style="text-align:middle">{{cpudata.softirq}}</td>
+            <td data-title="'iowait'" style="text-align:middle">{{cpudata.iowait}}</td>
+            <td data-title="'system'" style="text-align:middle">{{cpudata.system}}</td>
+            <td data-title="'user'" style="text-align:middle">{{cpudata.user}}</td>
+            <td data-title="'irq'" style="text-align:middle">{{cpudata.irq}}</td>
+            <td data-title="'steal'" style="text-align:middle">{{cpudata.steal}}</td>
+            <td data-title="'idle'" style="text-align:middle">{{cpudata.idle}}</td>
+            <td data-title="'guest'" style="text-align:middle">{{cpudata.guest}}</td>
+        </tr>
+	</table>
+</div>
+<div  id="iowait"  width="100%"></div>
