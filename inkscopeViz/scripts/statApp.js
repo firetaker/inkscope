@@ -121,7 +121,9 @@ function  MemCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
     $host=$routeParams.poolID;
     var $timeFromTo=TimeFromTo();
     var para = {"hostname":$host,"timestamp":$timeFromTo};
-    $http({method:"post",data:JSON.stringify(para), headers:{'Content-Type': 'application/x-www-form-urlencoded'},url:"../inkscopeCtrl/ceph/memstat",timeout:4000})
+    var url_para = "../inkscopeCtrl/ceph/memstat";
+    //$http({method:"post",data:JSON.stringify(para), headers:{'Content-Type': 'application/x-www-form-urlencoded'},url:"../inkscopeCtrl/ceph/memstat",timeout:4000})
+    $http({method:"post",data:JSON.stringify(para), url:url_para,timeout:4000})
         .success(function (data) {
             var  len=data.length;
             var dataList=[];
@@ -130,16 +132,16 @@ function  MemCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
                 dataList[0].timestamp=timestampformat(dataList[0].timestamp);
             }
             var arr_used = new Array();
-	    var arr_free = new Array();
-	    var arr_cached = new Array();
+	        var arr_free = new Array();
+	        var arr_cached = new Array();
             var tids = new Array();
             for (var i = 0; i < data.length; i++) {
                 //console.log(data[i].timestamp);
                 tids.push(i);
                 arr_used.push(Number(data[i].used));
-		arr_cached.push(Number(data[i].cached));
-		arr_free.push(Number(data[i].free));
-	    }
+		        arr_cached.push(Number(data[i].cached));
+		        arr_free.push(Number(data[i].free));
+	        }
             var style = {
             default: {
                 point: {
@@ -164,6 +166,7 @@ function  MemCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
             $rootScope.memdataList=dataList;
         });
 }
+
 function  NetworkCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
     var $host=$routeParams.poolID;
     var $timeFromTo=TimeFromTo();
@@ -247,32 +250,6 @@ function  NetworkCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) 
         });
 
 }
-
-function  DiskCtrl($http, $rootScope,$host, $templateCache) {
-    $http({method:"post",data:{"hostname" : $host},url:"../inkscopeCtrl/ceph/diskstat",timeout:4000})
-        .success(function (data) {
-            var dataLen=data.length;
-            var dataCount=0;
-            if(dataLen!=0)
-		var dataDisk1=data[0].disk.$id;
-            for(var i=0;i<dataLen;i++){
-		if(data[i].disk.$id==dataDisk1)
-                    dataCount++;
-            }
-            var  dataListNumber=0;
-            if(dataCount!=0)
-		dataListNumber=dataLen/dataCount;
-            var  dataList=[];
-            var  dataStartNumber=0;
-            for(var  i=dataStartNumber;i<dataListNumber;i++){
-		dataList[i-dataStartNumber]=data[i];
-		dataList[i-dataStartNumber].timestamp=timestampformat(dataList[i-dataStartNumber].timestamp);
-            }
-             $rootScope.diskDataList=dataList;
-        
- });
- }
-
 
  function refreshPools($http, $rootScope,$templateCache) {
 
