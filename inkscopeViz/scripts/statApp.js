@@ -60,7 +60,6 @@ function  SwapCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
                 }
             }
             }
-            console.log(len);
             var graph = $("#SwapChart").aristochart({
                 style:style,
                 data: {
@@ -85,8 +84,6 @@ function  CpuCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
                 dataList[0]=data[len-1];
                 dataList[0].timestamp=timestampformat(dataList[0].timestamp);
             }
-            console.log(len);
-	   
 	    var apply = new Array();
 	    var tids = new Array();
 	    for (var i = 0; i < data.length; i++) {
@@ -105,8 +102,6 @@ function  CpuCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
 		    }
 		}
 	    } 
-            console.log(len);
-
 	    var graph = $("#iowait").aristochart({
 		style:style,                   
 		data: {
@@ -121,9 +116,9 @@ function  MemCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
     $host=$routeParams.poolID;
     var $timeFromTo=TimeFromTo();
     var para = {"hostname":$host,"timestamp":$timeFromTo};
-    var url_para = "../inkscopeCtrl/ceph/memstat";
     //$http({method:"post",data:JSON.stringify(para), headers:{'Content-Type': 'application/x-www-form-urlencoded'},url:"../inkscopeCtrl/ceph/memstat",timeout:4000})
-    $http({method:"post",data:JSON.stringify(para), url:url_para,timeout:4000})
+     
+    $http({method:"post",data:JSON.stringify(para),url:"../inkscopeCtrl/ceph/memstat",timeout:4000})
         .success(function (data) {
             var  len=data.length;
             var dataList=[];
@@ -132,16 +127,16 @@ function  MemCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
                 dataList[0].timestamp=timestampformat(dataList[0].timestamp);
             }
             var arr_used = new Array();
-	        var arr_free = new Array();
-	        var arr_cached = new Array();
+	    var arr_free = new Array();
+	    var arr_cached = new Array();
             var tids = new Array();
             for (var i = 0; i < data.length; i++) {
                 //console.log(data[i].timestamp);
                 tids.push(i);
                 arr_used.push(Number(data[i].used));
-		        arr_cached.push(Number(data[i].cached));
-		        arr_free.push(Number(data[i].free));
-	        }
+		arr_cached.push(Number(data[i].cached));
+		arr_free.push(Number(data[i].free));
+	    }
             var style = {
             default: {
                 point: {
@@ -166,7 +161,6 @@ function  MemCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
             $rootScope.memdataList=dataList;
         });
 }
-
 function  NetworkCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
     var $host=$routeParams.poolID;
     var $timeFromTo=TimeFromTo();
@@ -178,6 +172,7 @@ function  NetworkCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) 
 	    var  $arrRxList=new Array();
             var  $arrTxList=new Array();
      	    while($len!=0){
+		data[0].timestamp=timestampformat(data[0].timestamp);
 		$dataList.push(data[0]);
 		var $count=0;
 		var  $arrRx=new Array();
@@ -206,7 +201,6 @@ function  NetworkCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) 
 		$arrRxList.push($arrRx);
 		$arrTxList.push($arrTx);
 	    }
-
 	    var $lenRx=$arrRxList[0].length;
 	    var $lenTx=$arrRxList[0].length;
 	    var $len2=$arrRxList.length;
@@ -250,8 +244,7 @@ function  NetworkCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) 
         });
 
 }
-
- function refreshPools($http, $rootScope,$templateCache) {
+function refreshPools($http, $rootScope,$templateCache) {
 
      var  $page=getQueryString("page");
      if($page==null)

@@ -54,21 +54,12 @@ function refreshPools($http, $rootScope, $templateCache) {
            else
         $rootScope.leftPage=$page-1;
     $rootScope.rightPage=$page-1+2;
-    var  $search=document.getElementById('search').value;
-  //  var  $from=document.getElementById('from').value;
-  //  var  $to=document.getElementById('to').value;
-    console.log($search);
-   // console.log($from);
-   // console.log(datetime_to_unix($to));
-    $searchData="";
-    if($search!="")
-	$searchData={"_id" : $search };
-    
     $http({method: "get",url: "../inkscopeCtrl/ceph/mon?skip="+$skip+"&limit="+$limit, cache: $templateCache}).
         success(function (data, status) {
 	    var $len=data.length;
 	    for(var  $i=0;$i<$len;$i++){
 		data[$i].num=$i;
+		data[$i]._id="mon."+data[$i]._id;
 	    }
             $rootScope.orderedData =  data;
 	    $rootScope.pageTitle="Ceph osd view";
@@ -98,7 +89,7 @@ function SearchCtrl($rootScope,$http, $filter, ngTableParams) {
 function DetailCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
     $host=$routeParams.processId;
     var $timeFromTo=TimeFromTo();
-    var para = {"daemontype" : "mon."+$host,"timestamp":$timeFromTo};
+    var para = {"daemontype" : $host,"timestamp":$timeFromTo};
     $http({method:"post",data:JSON.stringify(para),url:"../inkscopeCtrl/ceph/processstat",timeout:4000})
 	.success(function (data) {
             var  len=data.length;
@@ -177,7 +168,7 @@ function DetailCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
                 }
             });
 
-            $rootScope.memdataList=dataList;
+            $rootScope.dataList=dataList;
 
         })
         .error(function (data, status, headers) {

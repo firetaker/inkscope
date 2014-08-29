@@ -41,17 +41,7 @@ function refreshPools($http, $rootScope, $templateCache) {
            else
         $rootScope.leftPage=$page-1;
     $rootScope.rightPage=$page-1+2;
-    var  $search=document.getElementById('search').value;
-    var  $from=document.getElementById('from').value;
-    var  $to=document.getElementById('to').value;
-    console.log($search);
-    console.log($from);
-    console.log(datetime_to_unix($to));
-    $searchData="";
-    if($search!="")
-	$searchData={"_id" : $search };
-    
-    $http({method: "get",data:$searchData,url: "../inkscopeCtrl/ceph/pg?page="+$page+"&skip="+$skip+"&limit="+$limit, cache: $templateCache}).
+    $http({method: "get",url: "../inkscopeCtrl/ceph/pg?skip="+$skip+"&limit="+$limit, cache: $templateCache}).
         success(function (data, status) {
 	    var $len=data.length;
 	    for(var  $i=0;$i<$len;$i++){
@@ -89,24 +79,9 @@ function DetailCtrl($rootScope,$scope, $http, $routeParams, $route, $dialogs) {
     var  $pageNumber=20;
     var  $skip=$page-1;
     var  $limit=$pageNumber;
-     var uri = inkscopeCtrlURL + "/ceph/pg?page="+$page+"&skip="+$skip+"&limit="+$limit;
+     var uri = inkscopeCtrlURL + "ceph/pg?skip="+$skip+"&limit="+$limit;
     var v;
     var v2 = '';
-    $http({method: "get", url: cephRestApiURL + "tell/osd.0/version.json"}).
-        success(function(data,status){
-            $rootScope.status = status;
-            v = data.output.version;
-            for (var i=13; i<17; i++){
-                v2 = v2 + v[i];
-            }
-            $rootScope.version = parseFloat(v2);
-        }).
-        error(function (data, status, headers) {
-            $rootScope.status = status;
-            $rootScope.versionosd =  data || "Request failed";
-        }
-    );
-
     $http({method: "get", url: uri }).
         success(function (data, status) {
             $rootScope.status = status;

@@ -60,7 +60,7 @@
 <div id="listpool">
      <table>
         <tr>
-            <th><input type="text" id="search" class="search-query" placeholder="Search"></th>
+            <th><input type="text" ng-model="search" class="search-query" placeholder="Search"></th>
             <th>&nbsp; &nbsp; </th>
         </tr>
            <tr>
@@ -70,7 +70,7 @@
      </table>
 
     <table ng-table="tableParams" class="table table-condensed table-hover">
-        <tr ng-repeat="pool in orderedData">
+        <tr ng-repeat="pool in orderedData|filter:search">
             <td data-title="'Id'">{{pool._id}}</td>
             <td data-title="'pool.hostip'" >{{pool.hostip}}</td>
 	    <td data-title="'timestamp'" >{{pool.timestamp}}</td>

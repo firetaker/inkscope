@@ -53,7 +53,7 @@
     }
 
 </style>
-<title>Ceph HOST  view</title>
+<title>Ceph Mon  view</title>
 </head>
 <body ng-controller="ListCtrl">
 
@@ -62,7 +62,7 @@
 <div id="listpool">
      <table>
         <tr>
-            <th><input type="text" id="search" class="search-query" placeholder="Search"></th>
+            <th><input type="text" ng-model="search" class="search-query" placeholder="Search"></th>
             <th>&nbsp; &nbsp; </th>
         </tr>
 	 <tr>
@@ -72,8 +72,8 @@
     </table>
      <br>
      <table ng-table="tableParams" class="table table-condensed table-hover">
-        <tr ng-repeat="pool in orderedData">
-            <td data-title="'Id'">mon{{pool._id}}</td>
+        <tr ng-repeat="pool in orderedData | filter:search">
+            <td data-title="'Id'">{{pool._id}}</td>
             <td data-title="'addr'" >{{pool.addr}}</td>
 	    <td data-title="'rank'" >{{pool.rank}}</td>
 	     <td data-title="'detail'" sortable="pool" style="text-align:center">

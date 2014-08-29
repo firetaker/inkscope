@@ -59,7 +59,7 @@
 <div id="listpool">
      <table>
         <tr>
-            <th><input type="text" id="search" class="search-query" placeholder="Search"></th>
+            <th><input type="text" ng-model="search" class="search-query" placeholder="Search"></th>
             <th>&nbsp; &nbsp; </th>
 	    
         </tr>
@@ -67,15 +67,10 @@
             <td>From：<input type="timepicker" id="from"></td>
             <td>To：<input type="timepicker" id="to"></td>
         </tr>
-	<tr>
-          <td><input type="button" onclick="SearchCtrl()"  value="查找"/></td>
-        </tr>
-
-    </table>
     <br>
     <table ng-table="tableParams" class="table table-condensed table-hover">
-        <tr ng-repeat="pool in orderedData">
-            <td data-title="'Id'">osd{{pool._id}}</td>
+        <tr ng-repeat="pool in orderedData | filter:search">
+            <td data-title="'Id'">{{pool._id}}</td>
             <td data-title="'cluster_addr'" >{{pool.cluster_addr}}</td>
 	    <td data-title="'public_addr'" >{{pool.public_addr}}</td>
 	     <td data-title="'detail'" sortable="pool" style="text-align:center">
