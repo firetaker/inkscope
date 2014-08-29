@@ -35,18 +35,12 @@
     </style>
 </head>
 <body ng-controller="ListCtrl">
+<header id="header" ng-include src="'partials/header.html'" ng-init="pageTitle='Ceph cluster hosts'"></header>
 
 <div>
 <!--div id="status"  >{{status}}</div-->
 <br/>
-<quick-datepicker 
-ng-model='myDate' 
-date-format='EEEE, MMMM d, yyyy' 
-placeholder='Pick a Date'></quick-datepicker>
-<br>
-<label>Select Date: <input type="text" ui-date ng-model="aDate"></label>
-  <div>{{aDate}}</div>
-<br/>
+
 <div id="list">
     <table>
         <tr>
